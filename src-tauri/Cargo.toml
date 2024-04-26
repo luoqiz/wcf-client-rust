@@ -1,8 +1,8 @@
 [package]
 name = "wcf-client-rust"
-version = "0.0.0"
-description = "A Tauri App"
-authors = ["you"]
+version = "0.0.1"
+description = "A HTTP (Rust) client for WeChatFerry"
+authors = ["luoqiz"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -15,4 +15,20 @@ tauri = { version = "2.0.0-beta", features = [] }
 tauri-plugin-shell = "2.0.0-beta"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+log = "0.4.21"
+nng = "1.0.1"
+warp = "0.3.7"
+utoipa = "4.2.0"
+utoipa-swagger-ui = "6.0.0"
+base64 = "0.22.0"
+chrono = "0.4.38"
+prost = "0.12.4"
+env_logger = "0.11.3"
+tokio = { version = "1.37.0", features = ["full"] }
+reqwest = { version = "0.12.4", features = ["blocking", "json"] }
+winapi = { version = "0.3.9", features = ["winuser", "synchapi"] }
 
+[features]
+# this feature is used for production builds or when `devPath` points to the filesystem
+# DO NOT REMOVE!!
+custom-protocol = ["tauri/custom-protocol"]
