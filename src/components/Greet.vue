@@ -19,7 +19,7 @@ const stopService = async () => {
 }
 
 
-function appendLogWithLimit(message:string, maxLines = 1000) {
+function appendLogWithLimit(message:any, maxLines = 1000) {
     logMsg.value += message + "\n";
     let lines = logMsg.value.split("\n");
 

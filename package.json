@@ -1,7 +1,7 @@
 {
   "name": "wcf-client-rust",
   "private": true,
-  "version": "0.0.0",
+  "version": "2024.04.28",
   "type": "module",
   "scripts": {
     "tauri-dev": "pnpm tauri dev",

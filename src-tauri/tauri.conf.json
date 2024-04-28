@@ -1,6 +1,6 @@
 {
   "productName": "wcf-client-rust",
-  "version": "0.0.0",
+  "version": "2024.04.28",
   "identifier": "com.iamteer.wcf",
   "build": {
     "beforeDevCommand": "pnpm dev",
@@ -38,6 +38,9 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
+    ],
+    "resources":[
+      "./src/wcferry/lib"
     ]
   }
 }
