@@ -4484,7 +4484,7 @@ dependencies = [
 
 [[package]]
 name = "wcf-client-rust"
-version = "0.0.1"
+version = "2024.4.28"
 dependencies = [
  "base64 0.22.0",
  "chrono",

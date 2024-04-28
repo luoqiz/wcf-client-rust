@@ -1,12 +1,15 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use chrono::Local;
-use log::{info, Level, LevelFilter, Log, Metadata, Record};
 use std::ptr;
 use std::sync::{Arc, Mutex};
-use tauri::{command, AppHandle, Manager, Window, WindowEvent};
+
+use chrono::Local;
+use log::{info, Level, LevelFilter, Log, Metadata, Record};
+use tauri::{App, AppHandle, command, Manager, Window, WindowEvent};
 use tauri::{menu::{MenuBuilder, MenuItemBuilder}, tray::{ClickType, TrayIconBuilder}};
+use tauri::image::Image;
+use tauri::tray::TrayIcon;
 use winapi::{
     shared::winerror::ERROR_ALREADY_EXISTS,
     um::{
@@ -16,10 +19,11 @@ use winapi::{
     },
 };
 
+use http_server::HttpServer;
+
 mod endpoints;
 mod http_server;
 mod wcferry;
-use http_server::HttpServer;
 
 struct FrontendLogger {
     app_handle: tauri::AppHandle,
@@ -108,32 +112,32 @@ fn handle_system_tray_event(window: &Window, event: &WindowEvent) {
 }
 
 // 初始化窗口位置(暂时不用自定义,让窗口居中显示)
-fn init_window(window: tauri::WebviewWindow) {
-    window.hide().unwrap();
-    if let Ok(Some(monitor)) = window.primary_monitor() {
-        let monitor_size = monitor.size();
-        if let Ok(window_size) = window.outer_size() {
-            let x = (monitor_size.width as i32 - window_size.width as i32) / 2;
-            let y = (monitor_size.height as i32 - window_size.height as i32) / 2;
-            window
-                .set_position(tauri::Position::Logical(tauri::LogicalPosition {
-                    x: x.into(),
-                    y: y.into(),
-                }))
-                .unwrap();
-        } else {
-            let x = (monitor_size.width as i32 - 640) / 2;
-            let y = (monitor_size.height as i32 - 320) / 2;
-            window
-                .set_position(tauri::Position::Logical(tauri::LogicalPosition {
-                    x: x.into(),
-                    y: y.into(),
-                }))
-                .unwrap();
-        }
-    }
-    window.show().unwrap();
-}
+// fn init_window(window: tauri::WebviewWindow) {
+//     window.hide().unwrap();
+//     if let Ok(Some(monitor)) = window.primary_monitor() {
+//         let monitor_size = monitor.size();
+//         if let Ok(window_size) = window.outer_size() {
+//             let x = (monitor_size.width as i32 - window_size.width as i32) / 2;
+//             let y = (monitor_size.height as i32 - window_size.height as i32) / 2;
+//             window
+//                 .set_position(tauri::Position::Logical(tauri::LogicalPosition {
+//                     x: x.into(),
+//                     y: y.into(),
+//                 }))
+//                 .unwrap();
+//         } else {
+//             let x = (monitor_size.width as i32 - 640) / 2;
+//             let y = (monitor_size.height as i32 - 320) / 2;
+//             window
+//                 .set_position(tauri::Position::Logical(tauri::LogicalPosition {
+//                     x: x.into(),
+//                     y: y.into(),
+//                 }))
+//                 .unwrap();
+//         }
+//     }
+//     window.show().unwrap();
+// }
 
 // 初始化日志功能
 fn init_log(handle: AppHandle) {
@@ -142,8 +146,37 @@ fn init_log(handle: AppHandle) {
         .expect("Failed to initialize logger");
 }
 
+// 初始化菜单
+fn init_menu(app: &mut App) {
+    let toggle = MenuItemBuilder::with_id("quit", "退出").build(app).unwrap();
+    let menu = MenuBuilder::new(app).items(&[&toggle]).build().unwrap();
+    let _ = TrayIconBuilder::new()
+        .menu(&menu)
+        .icon(Image::from_path("icons/icon.png").unwrap())
+        .on_menu_event(move |app, event| match event.id().as_ref() {
+            "quit" => {
+                app.exit(0);
+            }
+            _ => (),
+        })
+        .on_tray_icon_event(|tray, event| {
+            if event.click_type == ClickType::Double {
+                let app = tray.app_handle();
+                if let Some(webview_window) = app.get_webview_window("main") {
+                    if webview_window.is_visible().unwrap() {
+                        let _ = webview_window.hide();
+                    } else {
+                        let _ = webview_window.show();
+                        let _ = webview_window.set_focus();
+                    }
+                }
+            }
+        })
+        .build(app);
+}
+
 fn main() {
-    
+
     // let mutex_name = b"Global\\wcfrust_app_mutex\0";
     // unsafe {
     //     let handle = CreateMutexA(ptr::null_mut(), 0, mutex_name.as_ptr() as *const i8);
@@ -162,44 +195,15 @@ fn main() {
     //     }
     // }
 
-    // let quit = MenuItemBuilder::new("quit".to_string()).id("quit").build(app);
-    // let tray_menu = app::tray_menu::new().add_item(quit);
-    // let tray = tray::TrayIconBuilder::new().with_menu(tray_menu);
-
-     let app1 = tauri::Builder::default()
+    let app1 = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             // init_window(app.get_webview_window("main").unwrap());
             init_log(app.app_handle().clone());
-            
-            #[cfg(all(desktop, not(test)))]{
-                let toggle = MenuItemBuilder::with_id("quit", "退出").build(app)?;
-                let menu = MenuBuilder::new(app).items(&[&toggle]).build()?;
-                let tray = TrayIconBuilder::new()
-                    .menu(&menu)
-                    .on_menu_event(move |app, event| match event.id().as_ref() {
-                        "quit" => {
-                            println!("toggle clicked");
-                            app.exit(0);
-                        }
-                        _ => (),
-                    })
-                    .on_tray_icon_event(|tray, event| {
-                        if event.click_type == ClickType::Double {
-                            let app = tray.app_handle();
-                            if let Some(webview_window) = app.get_webview_window("main") {
-                                let _ = webview_window.show();
-                                let _ = webview_window.set_focus();
-                            }
-                        }
-                    })
-                    .build(app)?;
-            }
+            init_menu(app);
             Ok(())
         })
         .on_window_event(handle_system_tray_event)
-        // .system_tray(tray)
-        // .on_system_tray_event(handle_system_tray_event)
         .manage(Arc::new(Mutex::new(AppState {
             http_server: HttpServer::new(),
         })))
@@ -208,3 +212,4 @@ fn main() {
     app1.run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+
