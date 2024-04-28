@@ -1,22 +1,32 @@
 {
   "productName": "wcf-client-rust",
   "version": "0.0.0",
-  "identifier": "com.tauri.dev",
+  "identifier": "com.iamteer.wcf",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "pnpm build",
     "frontendDist": "../dist"
   },
-  "app": {"windows": [
+  "app": {
+    "windows": [
       {
         "title": "wcf-client-rust",
         "width": 800,
-        "height": 600
+        "height": 600,
+        "closable": true,
+        "maximizable": false,
+        "minimizable": false,
+        "resizable": false,
+        "center": true
       }
     ],
     "security": {
       "csp": null
+    },
+    "trayIcon": {
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": true
     }
   },
   "bundle": {

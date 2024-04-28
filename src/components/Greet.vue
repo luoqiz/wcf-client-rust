@@ -58,7 +58,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
 <template>
   <div class="row">
-    <input id="greet-input" v-model="url" placeholder="输入回调地址" />
+    <input class="greet-input" v-model="url" placeholder="输入回调地址" />
     <button type="submit" v-show="isRun" @click="stopService">停止</button>
     <button type="submit" v-show="!isRun" @click="startService">启动</button>
   </div>
@@ -70,5 +70,10 @@ window.addEventListener("DOMContentLoaded", () => {
 <style scoped>
 .log-container{
     margin-top: 36px;
+}
+
+.greet-input {
+  margin-right: 5px;
+  width: 70%;
 }
 </style>

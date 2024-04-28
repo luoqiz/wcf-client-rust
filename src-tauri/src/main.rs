@@ -1,18 +1,12 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
-
-
 use chrono::Local;
 use log::{info, Level, LevelFilter, Log, Metadata, Record};
 use std::ptr;
 use std::sync::{Arc, Mutex};
-use tauri::{command, AppHandle, Manager};
+use tauri::{command, AppHandle, Manager, Window, WindowEvent};
+use tauri::{menu::{MenuBuilder, MenuItemBuilder}, tray::{ClickType, TrayIconBuilder}};
 use winapi::{
     shared::winerror::ERROR_ALREADY_EXISTS,
     um::{
@@ -31,6 +25,7 @@ struct FrontendLogger {
     app_handle: tauri::AppHandle,
 }
 
+// 日志打印
 impl Log for FrontendLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
         metadata.level() <= Level::Info
@@ -55,6 +50,7 @@ struct AppState {
     http_server: HttpServer,
 }
 
+// 开启http_server
 #[command]
 async fn start_server(
     state: tauri::State<'_, Arc<Mutex<AppState>>>,
@@ -79,6 +75,7 @@ async fn start_server(
     Ok(())
 }
 
+// 关闭 http_server
 #[command]
 async fn stop_server(state: tauri::State<'_, Arc<Mutex<AppState>>>) -> Result<(), String> {
     {
@@ -90,31 +87,28 @@ async fn stop_server(state: tauri::State<'_, Arc<Mutex<AppState>>>) -> Result<()
     Ok(())
 }
 
+// 确认退出
 #[command]
 async fn confirm_exit(app_handle: tauri::AppHandle) {
     let _ = stop_server(app_handle.state()).await;
     std::process::exit(0);
 }
 
-// fn handle_system_tray_event(app_handle: &tauri::AppHandle, event: tauri::SystemTrayEvent) {
-//     match event {
-//         tauri::SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
-//             "quit" => {
-//                 app_handle.emit_all("request-exit", ()).unwrap();
-//             }
-//             _ => {}
-//         },
-//         tauri::SystemTrayEvent::LeftClick { .. } => {
-//             if let Some(window) = app_handle.get_window("main") {
-//                 window.show().unwrap();
-//                 window.set_focus().unwrap();
-//             }
-//         }
-//         _ => {}
-//     }
-// }
+// 处理系统托盘菜单
+fn handle_system_tray_event(window: &Window, event: &WindowEvent) {
+    match event {
+        WindowEvent::CloseRequested { api, .. } => {
+            api.prevent_close();
+            if let Some(window) = window.get_webview_window("main") {
+                window.hide().unwrap();
+            }
+        }
+        _ => {}
+    }
+}
 
-fn init_window(window: tauri::Window) {
+// 初始化窗口位置(暂时不用自定义,让窗口居中显示)
+fn init_window(window: tauri::WebviewWindow) {
     window.hide().unwrap();
     if let Ok(Some(monitor)) = window.primary_monitor() {
         let monitor_size = monitor.size();
@@ -141,6 +135,7 @@ fn init_window(window: tauri::Window) {
     window.show().unwrap();
 }
 
+// 初始化日志功能
 fn init_log(handle: AppHandle) {
     log::set_boxed_logger(Box::new(FrontendLogger { app_handle: handle }))
         .map(|()| log::set_max_level(LevelFilter::Info))
@@ -167,26 +162,42 @@ fn main() {
     //     }
     // }
 
-    // let quit = CustomMenuItem::new("quit".to_string(), "退出");
-    // let tray_menu = SystemTrayMenu::new().add_item(quit);
-    // let tray = SystemTray::new().with_menu(tray_menu);
+    // let quit = MenuItemBuilder::new("quit".to_string()).id("quit").build(app);
+    // let tray_menu = app::tray_menu::new().add_item(quit);
+    // let tray = tray::TrayIconBuilder::new().with_menu(tray_menu);
 
-     let app = tauri::Builder::default()
-        // .setup(|app| {
-        //     init_window(app.get_window("main").unwrap());
-        //     init_log(app.app_handle());
-        //     Ok(())
-        // })
+     let app1 = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        // .on_window_event(move |event| match event.event() {
-        //     WindowEvent::CloseRequested { api, .. } => {
-        //         api.prevent_close();
-        //         if let Some(window) = event.window().get_window("main") {
-        //             window.hide().unwrap();
-        //         }
-        //     }
-        //     _ => {}
-        // })
+        .setup(|app| {
+            // init_window(app.get_webview_window("main").unwrap());
+            init_log(app.app_handle().clone());
+            
+            #[cfg(all(desktop, not(test)))]{
+                let toggle = MenuItemBuilder::with_id("quit", "退出").build(app)?;
+                let menu = MenuBuilder::new(app).items(&[&toggle]).build()?;
+                let tray = TrayIconBuilder::new()
+                    .menu(&menu)
+                    .on_menu_event(move |app, event| match event.id().as_ref() {
+                        "quit" => {
+                            println!("toggle clicked");
+                            app.exit(0);
+                        }
+                        _ => (),
+                    })
+                    .on_tray_icon_event(|tray, event| {
+                        if event.click_type == ClickType::Double {
+                            let app = tray.app_handle();
+                            if let Some(webview_window) = app.get_webview_window("main") {
+                                let _ = webview_window.show();
+                                let _ = webview_window.set_focus();
+                            }
+                        }
+                    })
+                    .build(app)?;
+            }
+            Ok(())
+        })
+        .on_window_event(handle_system_tray_event)
         // .system_tray(tray)
         // .on_system_tray_event(handle_system_tray_event)
         .manage(Arc::new(Mutex::new(AppState {
@@ -194,6 +205,6 @@ fn main() {
         })))
         .invoke_handler(tauri::generate_handler![start_server, stop_server, confirm_exit]);
 
-    app.run(tauri::generate_context!())
+    app1.run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
