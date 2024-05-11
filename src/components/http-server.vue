@@ -3,12 +3,16 @@ import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
+import InputText from 'primevue/inputtext';
+import Button from 'primevue/button';
+import Textarea from 'primevue/textarea';
+
 const logMsg = ref("");
 const url = ref("");
 
 const isRun = ref(false)
 
-const startService = async () =>  {
+const startService = async () => {
     await invoke('start_server', { "host": "0.0.0.0", "port": 10010, "cburl": url.value });
     isRun.value = true;
 }
@@ -19,7 +23,7 @@ const stopService = async () => {
 }
 
 
-function appendLogWithLimit(message:any, maxLines = 1000) {
+function appendLogWithLimit(message: any, maxLines = 1000) {
     logMsg.value += message + "\n";
     let lines = logMsg.value.split("\n");
 
@@ -57,23 +61,14 @@ window.addEventListener("DOMContentLoaded", () => {
 </script>
 
 <template>
-  <div class="row">
-    <input class="greet-input" v-model="url" placeholder="输入回调地址" />
-    <button type="submit" v-show="isRun" @click="stopService">停止</button>
-    <button type="submit" v-show="!isRun" @click="startService">启动</button>
-  </div>
-  <div class="log-container">
-    <textarea v-model="logMsg" rows="25" cols="110" readonly></textarea>
-  </div>
+    <div class="flex flex-row justify-evenly">
+        <InputText type="text" class="w-80%" v-model="url" placeholder="输入回调地址" />
+        <Button label="停止" v-show="isRun" @click="stopService" severity="danger" />
+        <Button label="启动" v-show="!isRun" @click="startService" severity="success" />
+    </div>
+    <div class="mt-20px">
+        <Textarea v-model="logMsg" rows="20" cols="80" readonly autoResize disabled />
+    </div>
 </template>
 
-<style scoped>
-.log-container{
-    margin-top: 36px;
-}
-
-.greet-input {
-  margin-right: 5px;
-  width: 70%;
-}
-</style>
+<style scoped></style>
