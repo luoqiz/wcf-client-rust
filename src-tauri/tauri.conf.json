@@ -13,7 +13,7 @@
       {
         "title": "wcf-client-rust",
         "width": 800,
-        "height": 600,
+        "height": 610,
         "closable": true,
         "maximizable": false,
         "minimizable": false,
@@ -35,9 +35,6 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources":[
-      "./src/wcferry/lib",
-      "./icons"
-    ]
+    "resources": ["./src/wcferry/lib", "./icons"]
   }
 }
