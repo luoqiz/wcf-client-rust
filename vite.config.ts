@@ -1,9 +1,10 @@
 import { defineConfig } from "vite";
+import UnoCSS from "unocss/vite";
 import vue from "@vitejs/plugin-vue";
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
-  plugins: [vue()],
+  plugins: [vue(), UnoCSS()],
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
