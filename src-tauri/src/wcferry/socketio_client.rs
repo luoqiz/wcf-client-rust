@@ -1,7 +1,6 @@
 use std::thread;
 use serde_json::json;
 use std::time::Duration;
-use futures_util::future::BoxFuture;
 use futures_util::FutureExt;
 use log::{debug, error};
 use rust_socketio::{
@@ -9,29 +8,22 @@ use rust_socketio::{
     Payload,
 };
 use tokio::io;
-use std::sync::{Arc, Mutex};
 use tokio::task::JoinHandle;
-use crate::wcferry::WeChat;
 
+#[derive(Clone)]
 pub struct SocketClient {
     pub client: Option<Client>,
-    pub wechat: Option<Arc<Mutex<WeChat>>>,
 }
 
 impl SocketClient {
     pub fn new() -> Self {
         SocketClient {
             client: None,
-            wechat: None,
         }
     }
 
-
-    pub async fn start(&mut self, host: [u8; 4], port: u16, cburl: String) -> Result<(), String> {
-
-        // 初始化微信客户端连接
-        let wechat = Arc::new(Mutex::new(WeChat::new(true, cburl)));
-        self.wechat = Some(wechat.clone());
+    // 启动 socket 服务
+    pub async fn start(&mut self, cburl: String) -> Result<(), String> {
 
         let callback = |payload: Payload, socket: Client| {
             async move {
@@ -44,7 +36,7 @@ impl SocketClient {
                 .boxed()
         };
         // 发起连接
-        let mut socket = ClientBuilder::new("http://127.0.0.1:9001/?userId=".to_owned() + &*user_id.to_string())
+        let mut socket = ClientBuilder::new(cburl.clone())
             // .namespace("/")
             .on("SINGLE_CHAT", callback)
             .on("error", |err, _| {
@@ -53,7 +45,9 @@ impl SocketClient {
             .connect()
             .await
             .expect("Connection failed");
-        self.client = Some(socket);
+        self.client = Some(socket.clone());
+        let user_id="789";
+        let to_user_id = "123";
         let handle: JoinHandle<io::Result<()>> = tokio::spawn(async move {
             loop {
                 // 睡眠定期推送数据
@@ -75,10 +69,6 @@ impl SocketClient {
             tokio::spawn(async move {
                 client.disconnect().await.expect("Disconnect failed");
             });
-        }
-        if let Some(wechat) = &self.wechat {
-            let mut wechat = wechat.lock().unwrap(); // 获取 Mutex 的锁
-            wechat.stop().unwrap();
         }
         debug!("socketIo client stopped");
         Ok(())

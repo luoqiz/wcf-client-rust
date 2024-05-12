@@ -24,7 +24,11 @@ pub mod wcf {
     include!("wcf.rs");
 }
 
+pub mod socketio_client;
+
 use wcf::{request::Msg as ReqMsg, response::Msg as RspMsg, Functions, WxMsg};
+
+use crate::wcferry::socketio_client::SocketClient;
 
 #[macro_export]
 macro_rules! create_request {
@@ -101,12 +105,13 @@ macro_rules! execute_wcf_command {
     }};
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct WeChat {
     pub exe: PathBuf,
     pub listening: Arc<AtomicBool>,
     pub cmd_socket: nng::Socket,
     pub msg_socket: Option<nng::Socket>,
+    pub socketio_client: Option<SocketClient>,
 }
 
 impl Default for WeChat {
@@ -125,6 +130,7 @@ impl WeChat {
             listening: Arc::new(AtomicBool::new(false)),
             cmd_socket,
             msg_socket: None,
+            socketio_client: None,
         };
         info!("等待微信登录...");
         while !wc.clone().is_login().unwrap() {
@@ -258,7 +264,13 @@ impl WeChat {
         fn forward_msg(wechat: &mut WeChat, cburl: String, rx: Receiver<WxMsg>) {
             let mut cb_client = None;
             if !cburl.is_empty() {
-                cb_client = Some(Client::new());
+                if cburl.starts_with("http") {
+                    cb_client = Some(Client::new());
+                }
+                if cburl.starts_with("ws") {
+                    wechat.socketio_client = Some(SocketClient::new());
+                    wechat.socketio_client.as_mut().unwrap().start(cburl.clone());
+                }
             }
             while wechat.listening.load(Ordering::Relaxed) {
                 match rx.recv() {
@@ -327,6 +339,7 @@ impl WeChat {
             RspMsg::Status(status) => {
                 // TODO: 处理状态码
                 self.msg_socket.take().map(|s| s.close());
+                self.socketio_client.as_mut().unwrap().stop();
                 self.listening.store(false, Ordering::Relaxed);
                 return Ok(status);
             }
