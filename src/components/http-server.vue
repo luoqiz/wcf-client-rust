@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import {onMounted, ref} from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
@@ -52,12 +52,11 @@ async function startExitEventListener() {
     });
 }
 
-window.addEventListener("DOMContentLoaded", () => {
-    logMsg.value = "填写回调地址（不填写也可以，消息会显示在此处），然后点击【启动】\n";
-    startSerialEventListener();
-    startExitEventListener();
-});
-
+onMounted(()=>{
+  logMsg.value = "填写回调地址（不填写也可以，消息会显示在此处），然后点击【启动】\n";
+  startSerialEventListener();
+  startExitEventListener();
+})
 </script>
 
 <template>
