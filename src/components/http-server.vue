@@ -13,7 +13,7 @@ const url = ref("");
 const isRun = ref(false)
 
 const startService = async () => {
-    await invoke('start_server', { "host": "0.0.0.0", "port": 10010, "cburl": url.value });
+    await invoke('start_server', { "host": "0.0.0.0", "port": 10010, "cburl": url.value, "wsurl": "" });
     isRun.value = true;
 }
 

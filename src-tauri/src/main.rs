@@ -61,6 +61,7 @@ async fn start_server(
     host: String,
     port: u16,
     cburl: String,
+    wsurl: String,
 ) -> Result<(), String> {
     let host_bytes = host
         .split('.')
@@ -68,10 +69,9 @@ async fn start_server(
         .collect::<Vec<u8>>()
         .try_into()
         .map_err(|_| "Invalid host address".to_string())?;
-
     {
         let mut app_state = state.inner().lock().unwrap();
-        app_state.http_server.start(host_bytes, port, cburl)?;
+        let _ = app_state.http_server.start(host_bytes, port, cburl,wsurl);
     }
 
     info!("服务启动，监听 http://{}:{}", host, port);
@@ -175,7 +175,8 @@ fn init_menu(app: &mut App) {
         .build(app);
 }
 
-fn main() {
+
+  fn main() {
 
     // let mutex_name = b"Global\\wcfrust_app_mutex\0";
     // unsafe {

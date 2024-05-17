@@ -24,7 +24,11 @@ pub mod wcf {
     include!("wcf.rs");
 }
 
+pub mod socketio_client;
+
 use wcf::{request::Msg as ReqMsg, response::Msg as RspMsg, Functions, WxMsg};
+
+use crate::wcferry::socketio_client::SocketClient;
 
 #[macro_export]
 macro_rules! create_request {
@@ -101,22 +105,23 @@ macro_rules! execute_wcf_command {
     }};
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct WeChat {
     pub exe: PathBuf,
     pub listening: Arc<AtomicBool>,
     pub cmd_socket: nng::Socket,
     pub msg_socket: Option<nng::Socket>,
+    pub socketio_client: Option<Arc<std::sync::Mutex<SocketClient>>>,
 }
 
 impl Default for WeChat {
     fn default() -> Self {
-        WeChat::new(false, "".to_string())
+        WeChat::new(false, "".to_string(),Option::None)
     }
 }
 
 impl WeChat {
-    pub fn new(debug: bool, cburl: String) -> Self {
+    pub fn new(debug: bool, cburl: String,socketio_client:Option<Arc<std::sync::Mutex<SocketClient>>>) -> Self {
         let exe = env::current_dir().unwrap().join("src\\wcferry\\lib\\wcf.exe");
         let _ = WeChat::start(exe.clone(), debug);
         let cmd_socket = WeChat::connect(&CMD_URL).unwrap();
@@ -125,6 +130,7 @@ impl WeChat {
             listening: Arc::new(AtomicBool::new(false)),
             cmd_socket,
             msg_socket: None,
+            socketio_client: socketio_client,
         };
         info!("等待微信登录...");
         while !wc.clone().is_login().unwrap() {
@@ -177,6 +183,10 @@ impl WeChat {
                 .output(),
             "服务停止失败"
         );
+        if let Some(sc_cliet) = &self.socketio_client {
+           let _ = sc_cliet.try_lock().unwrap().disconnect();
+        }
+       
         debug!("服务已停止: {}", CMD_URL);
         Ok(())
     }
@@ -258,7 +268,7 @@ impl WeChat {
         fn forward_msg(wechat: &mut WeChat, cburl: String, rx: Receiver<WxMsg>) {
             let mut cb_client = None;
             if !cburl.is_empty() {
-                cb_client = Some(Client::new());
+                    cb_client = Some(Client::new());
             }
             while wechat.listening.load(Ordering::Relaxed) {
                 match rx.recv() {
@@ -327,6 +337,14 @@ impl WeChat {
             RspMsg::Status(status) => {
                 // TODO: 处理状态码
                 self.msg_socket.take().map(|s| s.close());
+               
+                // match &self.socketio_client {
+                //     None => {}
+                //     Some(ref mut sc) => async {
+                //         sc.stop().await.unwrap();
+                //         ()
+                //     }
+                // }
                 self.listening.store(false, Ordering::Relaxed);
                 return Ok(status);
             }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import {onMounted, ref} from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
@@ -8,12 +8,12 @@ import Button from 'primevue/button';
 import Textarea from 'primevue/textarea';
 
 const logMsg = ref("");
-const url = ref("");
+const url = ref("http://192.168.186.1:9001");
 
 const isRun = ref(false)
 
 const startService = async () => {
-    await invoke('start_server', { "host": "0.0.0.0", "port": 10010, "cburl": url.value });
+    await invoke('start_server', { "host": "0.0.0.0", "port": 10010, "cburl": "", "wsurl": url.value });
     isRun.value = true;
 }
 
@@ -52,11 +52,11 @@ async function startExitEventListener() {
     });
 }
 
-window.addEventListener("DOMContentLoaded", () => {
-    logMsg.value = "填写回调地址（不填写也可以，消息会显示在此处），然后点击【启动】\n";
-    startSerialEventListener();
-    startExitEventListener();
-});
+onMounted(()=>{
+  logMsg.value = "填写回调地址（不填写也可以，消息会显示在此处），然后点击【启动】\n";
+  startSerialEventListener();
+  startExitEventListener();
+})
 
 </script>
 

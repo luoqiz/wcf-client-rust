@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 use tokio::sync::oneshot;
 
 use crate::endpoints;
+use crate::wcferry::socketio_client::SocketClient;
 use crate::wcferry::WeChat;
 
 pub struct HttpServer {
@@ -18,8 +19,13 @@ impl HttpServer {
         }
     }
 
-    pub fn start(&mut self, host: [u8; 4], port: u16, cburl: String) -> Result<(), String> {
-        let wechat = Arc::new(Mutex::new(WeChat::new(true, cburl)));
+    pub fn start(&mut self, host: [u8; 4], port: u16, cburl: String, wsurl:String) -> Result<(), String> {
+        let wechat = Arc::new(Mutex::new(WeChat::new(true, cburl.clone(),None)));
+        let temp_wechat = wechat.clone();
+        tokio::spawn(async move {
+            let socket_client = Arc::new(Mutex::new(SocketClient::new(wsurl.clone()).await));
+            temp_wechat.lock().unwrap().socketio_client = Some(socket_client);
+        });
         self.wechat = Some(wechat.clone());
         let (shutdown_tx, shutdown_rx) = oneshot::channel();
         let addr = (host, port);
@@ -39,7 +45,6 @@ impl HttpServer {
             host.iter().map(|b| b.to_string()).collect::<Vec<_>>().join("."),
             port
         );
-
         Ok(())
     }
 
