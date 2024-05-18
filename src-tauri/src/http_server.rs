@@ -19,12 +19,14 @@ impl HttpServer {
         }
     }
 
-    pub fn start(&mut self, host: [u8; 4], port: u16, cburl: String, wsurl:String) -> Result<(), String> {
+    pub fn start(&mut self, host: [u8; 4], port: u16, cburl: String, wsurl: String) -> Result<(), String> {
         let wechat = Arc::new(Mutex::new(WeChat::new(true, cburl.clone(),None)));
         let temp_wechat = wechat.clone();
         tokio::spawn(async move {
-            let socket_client = Arc::new(Mutex::new(SocketClient::new(wsurl.clone()).await));
-            temp_wechat.lock().unwrap().socketio_client = Some(socket_client);
+            if !wsurl.is_empty() {
+                let socket_client = Arc::new(Mutex::new(SocketClient::new(wsurl.clone()).await));
+                temp_wechat.lock().unwrap().socketio_client = Some(socket_client);
+            }
         });
         self.wechat = Some(wechat.clone());
         let (shutdown_tx, shutdown_rx) = oneshot::channel();

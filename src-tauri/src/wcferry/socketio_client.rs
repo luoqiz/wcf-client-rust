@@ -1,5 +1,5 @@
 use std::{sync::{Arc}, thread, time::Duration};
-use serde_json::json;
+use serde_json::{json, Value};
 use log::{debug};
 use futures_util::{lock::Mutex, FutureExt};
 use rust_socketio::{
@@ -13,7 +13,7 @@ pub struct SocketClient {
 }
 
 impl SocketClient {
-    pub async fn new(cburl: String) -> Self {
+    pub async fn new(wsurl: String) -> Self {
         let callback = |payload: Payload, socket: Client| {
             async move {
                 match payload {
@@ -25,7 +25,7 @@ impl SocketClient {
                 .boxed()
         };
         // 发起连接
-        let socket = ClientBuilder::new(cburl)
+        let socket = ClientBuilder::new(wsurl.clone())
             // .namespace("/")
             .on("MSG", callback)
             .on("error", |err, _| {
@@ -56,6 +56,7 @@ impl SocketClient {
                  thread::sleep(Duration::from_secs(10));
             }
         });
+        log::info!("开启websocket {:?}",wsurl.clone());
         socket_client
     }
  
@@ -66,5 +67,17 @@ impl SocketClient {
         });
         debug!("socketIo client stopped");
         Ok(())
+    }
+
+    pub fn send_msg(&mut self, payload: Value){
+        log::info!("ws 发送消息----9999999999999-----");
+        let task_msg = self.client.clone();
+        tokio::spawn(async move {
+            let client = task_msg.lock().await;
+            client
+                .emit("MSG",payload)
+                .await
+                .expect("Server unreachable");
+        });
     }
 }

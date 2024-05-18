@@ -2,11 +2,13 @@ use log::{debug, error, info, warn};
 use nng::options::{Options, RecvTimeout, SendTimeout};
 use prost::Message;
 use reqwest::blocking::Client;
+use serde_json::{json, Value};
+use futures_util::{lock::Mutex, FutureExt};
 use std::os::windows::process::CommandExt;
+use std::sync::Arc;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     mpsc::{self, Receiver, SyncSender},
-    Arc,
 };
 use std::{
     env,
@@ -121,7 +123,7 @@ impl Default for WeChat {
 }
 
 impl WeChat {
-    pub fn new(debug: bool, cburl: String,socketio_client:Option<Arc<std::sync::Mutex<SocketClient>>>) -> Self {
+    pub fn new(debug: bool, cburl: String, socketio_client: Option<Arc<std::sync::Mutex<SocketClient>>>) -> Self {
         let exe = env::current_dir().unwrap().join("src\\wcferry\\lib\\wcf.exe");
         let _ = WeChat::start(exe.clone(), debug);
         let cmd_socket = WeChat::connect(&CMD_URL).unwrap();
@@ -268,30 +270,46 @@ impl WeChat {
         fn forward_msg(wechat: &mut WeChat, cburl: String, rx: Receiver<WxMsg>) {
             let mut cb_client = None;
             if !cburl.is_empty() {
-                    cb_client = Some(Client::new());
+                cb_client = Some(Client::new());
             }
             while wechat.listening.load(Ordering::Relaxed) {
                 match rx.recv() {
                     Ok(msg) => {
-                        if let Some(client) = &cb_client {
-                            match client.post(cburl.clone()).json(&msg).send() {
-                                Ok(rsp) => {
-                                    if !rsp.status().is_success() {
-                                        error!("转发消息失败，状态码: {}", rsp.status().as_str());
-                                    }
-                                }
-                                Err(e) => {
-                                    error!("转发消息失败：{}", e);
-                                }
-                            }
-                        } else {
-                            info!("收到消息:\n{:?}", msg);
-                        };
+                        // http 转发
+                        send_http_msg(cb_client.clone(), cburl.clone(),msg.clone());
+                        // ws   转发
+                        send_ws_msg(wechat, msg.clone())                        ;
                     }
                     Err(e) => {
                         error!("消息出队失败: {}", e);
                     }
                 }
+            }
+        }
+
+        fn send_http_msg(cb_client: Option<Client>, cburl: String, msg: wcf::WxMsg){
+            if let Some(client) = &cb_client {
+                match client.post(cburl.clone()).json(&msg).send() {
+                    Ok(rsp) => {
+                        if !rsp.status().is_success() {
+                            error!("转发消息失败，状态码: {}", rsp.status().as_str());
+                        }
+                    }
+                    Err(e) => {
+                        error!("转发消息失败：{}", e);
+                    }
+                }
+            } else {
+                info!("收到消息:\n{:?}", msg);
+            };
+        }
+
+        fn send_ws_msg(wechat: &mut WeChat, msg:  wcf::WxMsg) {
+            let socket_arc = wechat.socketio_client.clone();
+            if let Some(client) = socket_arc {
+                log::info!("ws 发送消息---------");
+                let mut socket = client.lock().unwrap();
+                socket.send_msg(json!(msg));
             }
         }
 
@@ -337,14 +355,6 @@ impl WeChat {
             RspMsg::Status(status) => {
                 // TODO: 处理状态码
                 self.msg_socket.take().map(|s| s.close());
-               
-                // match &self.socketio_client {
-                //     None => {}
-                //     Some(ref mut sc) => async {
-                //         sc.stop().await.unwrap();
-                //         ()
-                //     }
-                // }
                 self.listening.store(false, Ordering::Relaxed);
                 return Ok(status);
             }
