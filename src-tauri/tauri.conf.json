@@ -1,6 +1,6 @@
 {
   "productName": "wcf-client-rust",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "identifier": "com.iamteer.wcf",
   "build": {
     "beforeDevCommand": "pnpm dev",
