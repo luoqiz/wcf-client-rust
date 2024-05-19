@@ -9,11 +9,20 @@ use rust_socketio::{
 
 #[derive(Clone)]
 pub struct SocketClient {
-    pub client: Arc<Mutex<Client>>,
+    pub url: String,
+    pub client: Option<Arc<Mutex<Client>>>,
 }
 
 impl SocketClient {
-    pub async fn new(wsurl: String) -> Self {
+    pub fn new(wsurl: String) -> Self {
+        let socket_client = SocketClient{
+            url: wsurl ,
+            client: Option::None
+        };
+        socket_client
+    }
+
+    pub async fn connect(&mut self)   -> std::io::Result<()>{
         let callback = |payload: Payload, socket: Client| {
             async move {
                 match payload {
@@ -25,7 +34,7 @@ impl SocketClient {
                 .boxed()
         };
         // 发起连接
-        let socket = ClientBuilder::new(wsurl.clone())
+        let socket = ClientBuilder::new(self.url.clone())
             // .namespace("/")
             .on("MSG", callback)
             .on("error", |err, _| {
@@ -39,10 +48,8 @@ impl SocketClient {
             .expect("Connection failed");
      
         let am_client = Arc::new(Mutex::new(socket));
-        let socket_client = SocketClient{
-            client: am_client.clone()
-        };
-
+        
+        self.client = Some(am_client.clone());
         let task_ping = am_client.clone();
         tokio::spawn(async move {
             loop {
@@ -56,28 +63,32 @@ impl SocketClient {
                  thread::sleep(Duration::from_secs(10));
             }
         });
-        log::info!("开启websocket {:?}",wsurl.clone());
-        socket_client
+        log::info!("开启websocket {:?}", self.url.clone());
+        Ok(())
     }
  
     pub fn disconnect(&mut self) -> Result<(), String> {
         let temp = self.client.clone();
-        tokio::spawn(async move{
-            let _ = temp.try_lock().unwrap().disconnect().await;
-        });
+        if let Some(value) = temp {
+            tokio::spawn(async move{
+                let _ = value.try_lock().unwrap().disconnect().await;
+            });
+        }
         debug!("socketIo client stopped");
         Ok(())
     }
 
-    pub fn send_msg(&mut self, payload: Value){
-        log::info!("ws 发送消息----9999999999999-----");
+    pub async fn send_msg(&mut self, payload: Value){
+        log::info!("ws发送消息: {:?}--",payload);
         let task_msg = self.client.clone();
-        tokio::spawn(async move {
-            let client = task_msg.lock().await;
-            client
-                .emit("MSG",payload)
-                .await
-                .expect("Server unreachable");
-        });
+        if let Some(value) = task_msg {
+            // tokio::spawn(async move {
+                // let json_payload1 = json!({"type": "msg"});
+                let client = value.lock().await;
+                client.emit("MSG",payload)
+                    .await
+                    .expect("Server unreachable");
+            // });
+        }
     }
 }

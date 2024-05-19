@@ -3,7 +3,7 @@ use nng::options::{Options, RecvTimeout, SendTimeout};
 use prost::Message;
 use reqwest::blocking::Client;
 use serde_json::{json, Value};
-use futures_util::{lock::Mutex, FutureExt};
+use tokio::runtime::Runtime;
 use std::os::windows::process::CommandExt;
 use std::sync::Arc;
 use std::sync::{
@@ -113,7 +113,7 @@ pub struct WeChat {
     pub listening: Arc<AtomicBool>,
     pub cmd_socket: nng::Socket,
     pub msg_socket: Option<nng::Socket>,
-    pub socketio_client: Option<Arc<std::sync::Mutex<SocketClient>>>,
+    pub socketio_client: Option<Arc<tokio::sync::Mutex<SocketClient>>>,
 }
 
 impl Default for WeChat {
@@ -123,7 +123,7 @@ impl Default for WeChat {
 }
 
 impl WeChat {
-    pub fn new(debug: bool, cburl: String, socketio_client: Option<Arc<std::sync::Mutex<SocketClient>>>) -> Self {
+    pub fn new(debug: bool, cburl: String, socketio_client: Option<Arc<tokio::sync::Mutex<SocketClient>>>) -> Self {
         let exe = env::current_dir().unwrap().join("src\\wcferry\\lib\\wcf.exe");
         let _ = WeChat::start(exe.clone(), debug);
         let cmd_socket = WeChat::connect(&CMD_URL).unwrap();
@@ -278,7 +278,7 @@ impl WeChat {
                         // http 转发
                         send_http_msg(cb_client.clone(), cburl.clone(),msg.clone());
                         // ws   转发
-                        send_ws_msg(wechat, msg.clone())                        ;
+                        send_ws_msg(wechat, msg.clone());
                     }
                     Err(e) => {
                         error!("消息出队失败: {}", e);
@@ -307,9 +307,19 @@ impl WeChat {
         fn send_ws_msg(wechat: &mut WeChat, msg:  wcf::WxMsg) {
             let socket_arc = wechat.socketio_client.clone();
             if let Some(client) = socket_arc {
-                log::info!("ws 发送消息---------");
-                let mut socket = client.lock().unwrap();
-                socket.send_msg(json!(msg));
+                let rt = Runtime::new().unwrap();
+                rt.block_on(async move{
+                    let mut socket = client.lock().await;
+                    socket.send_msg(json!(msg)).await;
+                });
+                // 异步发不了消息，暂不了解原因
+                // let scc = client.clone();
+                // rt.spawn( async move{
+                //     let mut socket = scc.lock().await;
+                //     socket.send_msg(json!(msg)).await;
+                // });
+            }else{
+                log::info!("ws 不存在---------");
             }
         }
 
