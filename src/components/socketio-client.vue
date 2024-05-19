@@ -61,14 +61,17 @@ onMounted(()=>{
 </script>
 
 <template>
-    <div class="flex flex-row justify-evenly">
-        <InputText type="text" class="w-80%" v-model="url" placeholder="输入回调地址" />
-        <Button label="停止" v-show="isRun" @click="stopService" severity="danger" />
-        <Button label="启动" v-show="!isRun" @click="startService" severity="success" />
+    <div class="flex flex-col">
+        <div class="flex-none flex flex-row justify-evenly">
+            <InputText type="text" class="w-80%" v-model="url" placeholder="输入回调地址" />
+            <Button label="停止" v-show="isRun" @click="stopService" severity="danger" />
+            <Button label="启动" v-show="!isRun" @click="startService" severity="success" />
+        </div>
+        <div class="flex-1 h-full mt-20px">
+            <Textarea v-model="logMsg" rows="20" cols="80" readonly disabled />
+        </div>
     </div>
-    <div class="mt-20px">
-        <Textarea v-model="logMsg" rows="20" cols="80" readonly autoResize disabled />
-    </div>
+    
 </template>
 
 <style scoped></style>

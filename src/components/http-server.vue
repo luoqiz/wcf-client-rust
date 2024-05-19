@@ -66,7 +66,7 @@ onMounted(()=>{
         <Button label="启动" v-show="!isRun" @click="startService" severity="success" />
     </div>
     <div class="mt-20px">
-        <Textarea v-model="logMsg" rows="20" cols="80" readonly autoResize disabled />
+        <Textarea v-model="logMsg" rows="20" cols="80" readonly disabled />
     </div>
 </template>
 
