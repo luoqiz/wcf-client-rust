@@ -1,7 +1,6 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::ptr;
 use std::sync::{Arc, Mutex};
 
 use chrono::Local;
@@ -9,7 +8,6 @@ use log::{info, Level, LevelFilter, Log, Metadata, Record};
 use tauri::{App, AppHandle, command, Manager, Window, WindowEvent};
 use tauri::{menu::{MenuBuilder, MenuItemBuilder}, tray::{ClickType, TrayIconBuilder}};
 use tauri::image::Image;
-use tauri::tray::TrayIcon;
 use winapi::{
     shared::winerror::ERROR_ALREADY_EXISTS,
     um::{

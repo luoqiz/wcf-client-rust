@@ -1,11 +1,12 @@
-use std::{sync::{Arc}, thread, time::Duration};
+use std::{sync::Arc, thread, time::Duration};
 use serde_json::{json, Value};
-use log::{debug};
-use futures_util::{lock::Mutex, FutureExt};
+use log::{debug, info};
+use futures_util::FutureExt;
 use rust_socketio::{
     asynchronous::{Client, ClientBuilder},
     Payload,
 };
+use tokio::sync::Mutex;
 
 #[derive(Clone)]
 pub struct SocketClient {
@@ -23,7 +24,7 @@ impl SocketClient {
     }
 
     pub async fn connect(&mut self)   -> std::io::Result<()>{
-        let callback = |payload: Payload, socket: Client| {
+        let callback = |payload: Payload, _socket: Client| {
             async move {
                 match payload {
                     Payload::Text(values) => log::info!("Received: {:#?}", values),
@@ -67,21 +68,21 @@ impl SocketClient {
         Ok(())
     }
  
-    pub fn disconnect(&mut self) -> Result<(), String> {
+    pub async fn disconnect(&mut self) -> std::io::Result<()> {
+        info!("等待 socketIo 断开连接");
         let temp = self.client.clone();
         if let Some(value) = temp {
-            tokio::spawn(async move{
-                let _ = value.try_lock().unwrap().disconnect().await;
-            });
+            let client = value.lock().await;
+            let _ = client.disconnect().await?;
         }
-        debug!("socketIo client stopped");
+        info!("socketIo 已断开连接");
         Ok(())
     }
 
     pub async fn send_msg(&mut self, payload: Value){
-        log::info!("ws发送消息: {:?}--",payload);
         let task_msg = self.client.clone();
         if let Some(value) = task_msg {
+            log::info!("ws发送消息: {:?}--",payload);
             // tokio::spawn(async move {
                 // let json_payload1 = json!({"type": "msg"});
                 let client = value.lock().await;

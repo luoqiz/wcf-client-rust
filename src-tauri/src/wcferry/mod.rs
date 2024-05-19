@@ -2,8 +2,9 @@ use log::{debug, error, info, warn};
 use nng::options::{Options, RecvTimeout, SendTimeout};
 use prost::Message;
 use reqwest::blocking::Client;
-use serde_json::{json, Value};
-use tokio::runtime::Runtime;
+use serde_json::json;
+use tokio::runtime:: Runtime;
+use tokio::sync::Mutex;
 use std::os::windows::process::CommandExt;
 use std::sync::Arc;
 use std::sync::{
@@ -113,17 +114,29 @@ pub struct WeChat {
     pub listening: Arc<AtomicBool>,
     pub cmd_socket: nng::Socket,
     pub msg_socket: Option<nng::Socket>,
-    pub socketio_client: Option<Arc<tokio::sync::Mutex<SocketClient>>>,
+    pub socketio_client: Option<Arc<Mutex<SocketClient>>>,
 }
 
 impl Default for WeChat {
     fn default() -> Self {
-        WeChat::new(false, "".to_string(),Option::None)
+        WeChat::new(false, "".to_string(),"".to_string())
     }
 }
 
 impl WeChat {
-    pub fn new(debug: bool, cburl: String, socketio_client: Option<Arc<tokio::sync::Mutex<SocketClient>>>) -> Self {
+    pub fn new(debug: bool, cburl: String, wsurl: String) -> Self {
+        // 创建ws客户端
+        let mut socketio_client = None;
+        if !wsurl.is_empty() {
+            let socket_client = Arc::new(Mutex::new(SocketClient::new(wsurl.clone())));
+            let temp_sc = socket_client.clone();
+            tokio::spawn(async move {
+                let mut ss = temp_sc.lock().await;
+                let _ = ss.connect().await;
+            });
+            socketio_client = Some(socket_client);
+        }
+
         let exe = env::current_dir().unwrap().join("src\\wcferry\\lib\\wcf.exe");
         let _ = WeChat::start(exe.clone(), debug);
         let cmd_socket = WeChat::connect(&CMD_URL).unwrap();
@@ -185,8 +198,13 @@ impl WeChat {
                 .output(),
             "服务停止失败"
         );
+        
         if let Some(sc_cliet) = &self.socketio_client {
-           let _ = sc_cliet.try_lock().unwrap().disconnect();
+            let amst =  sc_cliet.clone();
+            tokio::spawn(async move {
+                let mut ss = amst.lock().await;
+                let _ = ss.disconnect().await;
+            });
         }
        
         debug!("服务已停止: {}", CMD_URL);
@@ -318,8 +336,6 @@ impl WeChat {
                 //     let mut socket = scc.lock().await;
                 //     socket.send_msg(json!(msg)).await;
                 // });
-            }else{
-                log::info!("ws 不存在---------");
             }
         }
 
