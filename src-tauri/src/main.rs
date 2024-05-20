@@ -18,10 +18,12 @@ use winapi::{
 };
 
 use http_server::HttpServer;
+use crate::tauri_commands::get_contacts;
 
 mod endpoints;
 mod http_server;
 mod wcferry;
+mod tauri_commands;
 
 struct FrontendLogger {
     app_handle: tauri::AppHandle,
@@ -109,33 +111,6 @@ fn handle_system_tray_event(window: &Window, event: &WindowEvent) {
     }
 }
 
-// 初始化窗口位置(暂时不用自定义,让窗口居中显示)
-// fn init_window(window: tauri::WebviewWindow) {
-//     window.hide().unwrap();
-//     if let Ok(Some(monitor)) = window.primary_monitor() {
-//         let monitor_size = monitor.size();
-//         if let Ok(window_size) = window.outer_size() {
-//             let x = (monitor_size.width as i32 - window_size.width as i32) / 2;
-//             let y = (monitor_size.height as i32 - window_size.height as i32) / 2;
-//             window
-//                 .set_position(tauri::Position::Logical(tauri::LogicalPosition {
-//                     x: x.into(),
-//                     y: y.into(),
-//                 }))
-//                 .unwrap();
-//         } else {
-//             let x = (monitor_size.width as i32 - 640) / 2;
-//             let y = (monitor_size.height as i32 - 320) / 2;
-//             window
-//                 .set_position(tauri::Position::Logical(tauri::LogicalPosition {
-//                     x: x.into(),
-//                     y: y.into(),
-//                 }))
-//                 .unwrap();
-//         }
-//     }
-//     window.show().unwrap();
-// }
 
 // 初始化日志功能
 fn init_log(handle: AppHandle) {
@@ -174,6 +149,18 @@ fn init_menu(app: &mut App) {
 }
 
 
+#[command]
+async fn get_frirent(state: tauri::State<'_, Arc<Mutex<AppState>>>) -> Result<(), String> {
+    {
+        let mut app_state = state.inner().lock().unwrap();
+        app_state.http_server.stop()?;
+    }
+
+    info!("服务停止");
+    Ok(())
+}
+
+
   fn main() {
 
     // let mutex_name = b"Global\\wcfrust_app_mutex\0";
@@ -206,7 +193,10 @@ fn init_menu(app: &mut App) {
         .manage(Arc::new(Mutex::new(AppState {
             http_server: HttpServer::new(),
         })))
-        .invoke_handler(tauri::generate_handler![start_server, stop_server, confirm_exit]);
+        .invoke_handler(tauri::generate_handler![
+            start_server, stop_server, confirm_exit,
+            get_contacts
+        ]);
 
     app1.run(tauri::generate_context!())
         .expect("error while running tauri application");

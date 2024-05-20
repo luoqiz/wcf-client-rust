@@ -52,6 +52,12 @@ async function startExitEventListener() {
     });
 }
 
+const contacts = ref<[]>([]);
+const get_contacts = async () => {
+  let result = await invoke('get_contacts');
+  appendLogWithLimit(result);
+}
+
 onMounted(()=>{
   logMsg.value = "填写回调地址（不填写也可以，消息会显示在此处），然后点击【启动】\n";
   startSerialEventListener();
@@ -64,6 +70,7 @@ onMounted(()=>{
         <InputText type="text" class="w-80%" v-model="url" placeholder="输入回调地址" />
         <Button label="停止" v-show="isRun" @click="stopService" severity="danger" />
         <Button label="启动" v-show="!isRun" @click="startService" severity="success" />
+        <Button label="获取所有好友" @click="get_contacts" severity="success" />
     </div>
     <div class="mt-20px">
         <Textarea v-model="logMsg" rows="20" cols="80" readonly disabled />
