@@ -19,7 +19,7 @@ onMounted(()=>{
 
 <template>
     <div class="w-full h-full">
-        <Textarea v-model="logStore.logMsg" rows="20" cols="60" readonly disabled />
+        <Textarea v-model="logStore.logMsg" rows="20" cols="72" readonly disabled />
     </div>
 </template>
 

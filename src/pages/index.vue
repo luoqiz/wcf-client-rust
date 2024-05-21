@@ -8,7 +8,7 @@ import Service from '../components/service.vue';
     <div class="flex-none">
       <Service />
     </div>
-    <div class="flex-1">
+    <div class="flex-1 mt-32px">
       <Logger />
     </div>
   </div>

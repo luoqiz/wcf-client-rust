@@ -8,3 +8,11 @@ class Contact {
     remark: string;
     wxid: string;
 }
+
+class UserInfo{
+    wxid: string;
+    name: string;
+    mobile: string;
+    home: string;
+}
+

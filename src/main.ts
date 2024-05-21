@@ -19,7 +19,7 @@ const router = createRouter({
 const app = createApp(App);
 app.use(PrimeVue, {
 //   unstyled: true ,
-  ripple: true
+  // ripple: true
 });
 
 const pinia = createPinia();

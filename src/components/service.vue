@@ -32,10 +32,9 @@ onMounted(()=>{
 
 <template>
     <div class="flex flex-row">
-        <Button label="停止" v-show="store.isRunning" @click="store.stopService" severity="danger" />
-        <Button label="启动" v-show="!store.isRunning" @click="store.startService" severity="success" />
+        <Button label="停止" v-show="store.isRunning" @click="store.stopService" severity="success" icon="pi pi-pause" size="small"/>
+        <Button label="启动" v-show="!store.isRunning" @click="store.startService" icon="pi pi-play" severity="warning" size="small"/>
     </div>
-    
 </template>
 
 <style scoped></style>

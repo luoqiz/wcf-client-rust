@@ -2,7 +2,9 @@
 
 <script setup lang="ts">
 import { ref, defineEmits } from "vue";
+import { useServiceStore } from "~/stores/service"
 
+const serviceStore = useServiceStore();
 const items = ref([
     {
         separator: true
@@ -12,11 +14,8 @@ const items = ref([
         items: [
             {
                 label: '主页',
-                icon: 'pi pi-search',
+                icon: 'pi pi-home',
                 command: ()=> { handle_menu_click("/")},
-                action: (item: any)=>{
-                    handle_menu_click(item.url);
-                }
             },
             {
                 label: '好友',
@@ -31,24 +30,19 @@ const items = ref([
             {
                 label: '配置',
                 icon: 'pi pi-cog',
-                shortcut: '⌘+O',
                 command: ()=> { handle_menu_click("/config")}
             },
             {
-                label: '新建任务',
-                icon: 'pi pi-plus',
-                shortcut: '⌘+N',
+                label: '任务',
+                icon: 'pi pi-receipt',
                 url: "/task",
                 command: ()=> { handle_menu_click("/task")}
             },
             {
                 label: '消息',
                 icon: 'pi pi-inbox',
-                badge: 2,
+                badge: 0,
                 url: "/task",
-                action: (item: any)=>{
-                    handle_menu_click(item.url);
-                }
             },
             // {
             //     label: 'Logout',
@@ -96,7 +90,7 @@ const handle_menu_click = (url:string)=>{
             </template>
             <template #item="{ item, props }">
                 <div class="flex-auto">
-                    <a v-ripple class="flex align-items-center" v-bind="props.action">
+                    <a class="flex align-items-center" v-bind="props.action">
                     <span :class="item.icon" />
                     <span class="ml-2">{{ item.label }}</span>
                     <Badge v-if="item.badge" class="ml-auto" :value="item.badge" />
@@ -106,14 +100,13 @@ const handle_menu_click = (url:string)=>{
             </template>
         </Menu>
         <div class="flex-none">
-            <div></div>
-            <button v-ripple class="relative overflow-hidden w-full p-link flex align-items-center p-2 pl-3 text-color hover:surface-200 border-noround">
-                    <Avatar image="https://primefaces.org/cdn/primevue/images/avatar/amyelsner.png" class="mr-2" shape="circle" />
-                    <span class="inline-flex flex-column">
-                        <span class="font-bold">Amy Elsner</span>
-                        <span class="text-sm">Admin</span>
-                    </span>
-                </button>
+            <div v-if="serviceStore.userInfo != null" class="relative overflow-hidden w-full p-link flex align-items-center p-2 pl-3 text-color hover:surface-200 border-noround">
+                <Avatar image="https://primefaces.org/cdn/primevue/images/avatar/amyelsner.png" class="mr-2" shape="circle" />
+                <span class="flex flex-col">
+                    <span class="font-bold">{{ serviceStore.userInfo.name }}</span>
+                    <span class="text-sm">{{ serviceStore.userInfo.wxid }}</span>
+                </span>
+            </div>
         </div>
     </div>
 </template>
