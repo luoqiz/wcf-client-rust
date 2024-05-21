@@ -17,7 +17,7 @@
         "closable": true,
         "maximizable": false,
         "minimizable": false,
-        "resizable": false,
+        "resizable": true,
         "center": true
       }
     ],
