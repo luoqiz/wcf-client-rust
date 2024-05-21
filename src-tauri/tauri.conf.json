@@ -12,8 +12,8 @@
     "windows": [
       {
         "title": "wcf-client-rust",
-        "width": 800,
-        "height": 610,
+        "width": 1000,
+        "height": 600,
         "closable": true,
         "maximizable": false,
         "minimizable": false,

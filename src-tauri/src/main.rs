@@ -148,38 +148,7 @@ fn init_menu(app: &mut App) {
         .build(app);
 }
 
-
-#[command]
-async fn get_frirent(state: tauri::State<'_, Arc<Mutex<AppState>>>) -> Result<(), String> {
-    {
-        let mut app_state = state.inner().lock().unwrap();
-        app_state.http_server.stop()?;
-    }
-
-    info!("服务停止");
-    Ok(())
-}
-
-
   fn main() {
-
-    // let mutex_name = b"Global\\wcfrust_app_mutex\0";
-    // unsafe {
-    //     let handle = CreateMutexA(ptr::null_mut(), 0, mutex_name.as_ptr() as *const i8);
-    //     if handle.is_null() {
-    //         eprintln!("Failed to create mutex.");
-    //         return;
-    //     }
-    //     if GetLastError() == ERROR_ALREADY_EXISTS {
-    //         let window_name = "WcfRust\0".as_ptr() as *const i8;
-    //         let hwnd = FindWindowA(ptr::null(), window_name);
-    //         if !hwnd.is_null() {
-    //             ShowWindow(hwnd, SW_RESTORE);
-    //             SetForegroundWindow(hwnd);
-    //         }
-    //         return;
-    //     }
-    // }
 
     let app1 = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -195,7 +164,7 @@ async fn get_frirent(state: tauri::State<'_, Arc<Mutex<AppState>>>) -> Result<()
         })))
         .invoke_handler(tauri::generate_handler![
             start_server, stop_server, confirm_exit,
-            get_contacts
+            tauri_commands::get_contacts
         ]);
 
     app1.run(tauri::generate_context!())
