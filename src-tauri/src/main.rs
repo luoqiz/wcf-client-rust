@@ -164,7 +164,8 @@ fn init_menu(app: &mut App) {
         })))
         .invoke_handler(tauri::generate_handler![
             start_server, stop_server, confirm_exit,
-            tauri_commands::get_contacts
+            tauri_commands::get_contacts,
+            tauri_commands::get_user_info
         ]);
 
     app1.run(tauri::generate_context!())

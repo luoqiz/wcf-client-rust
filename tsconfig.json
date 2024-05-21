@@ -23,7 +23,12 @@
     /* vue-router */
     "types": [
       "unplugin-vue-router/client",
-    ]
+    ],
+
+    "baseUrl": ".",
+    "paths": {
+      "~/*": ["src/*"],
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue"],
   "references": [{ "path": "./tsconfig.node.json" }]

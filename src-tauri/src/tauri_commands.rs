@@ -58,3 +58,11 @@ pub async fn get_contacts(state: tauri::State<'_, Arc<Mutex<AppState>>>) -> Resu
     let res: Value = wechat_api_handler_inner!(wechat, WeChat::get_contacts, "获取所有联系人");
     Ok(res)
 }
+
+#[command]
+pub async fn get_user_info(state: tauri::State<'_, Arc<Mutex<AppState>>>) -> Result<Value, String> {
+    let app_state = state.inner().lock().unwrap();
+    let wechat = &app_state.http_server.wechat.clone().unwrap();
+    let res: Value = wechat_api_handler_inner!(wechat, WeChat::get_user_info, "获取登录账号信息");
+    Ok(res)
+}
