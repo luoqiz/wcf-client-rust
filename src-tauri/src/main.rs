@@ -24,6 +24,7 @@ mod endpoints;
 mod http_server;
 mod wcferry;
 mod tauri_commands;
+mod task_file;
 
 struct FrontendLogger {
     app_handle: tauri::AppHandle,
@@ -165,7 +166,9 @@ fn init_menu(app: &mut App) {
         .invoke_handler(tauri::generate_handler![
             start_server, stop_server, confirm_exit,
             tauri_commands::get_contacts,
-            tauri_commands::get_user_info
+            tauri_commands::get_user_info,
+            tauri_commands::write_wxid_task,
+            tauri_commands::read_wxid_task
         ]);
 
     app1.run(tauri::generate_context!())

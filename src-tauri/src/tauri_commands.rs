@@ -1,8 +1,9 @@
 use std::{sync::{Arc, Mutex}};
+use futures_util::future::ok;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tauri::command;
-use crate::{wcferry::{wcf::RpcContacts, WeChat}, wechat_api_handler, AppState};
+use crate::{task_file::{self, Task}, wcferry::{wcf::RpcContacts, WeChat}, wechat_api_handler, AppState};
 
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq,)]
@@ -64,5 +65,18 @@ pub async fn get_user_info(state: tauri::State<'_, Arc<Mutex<AppState>>>) -> Res
     let app_state = state.inner().lock().unwrap();
     let wechat = &app_state.http_server.wechat.clone().unwrap();
     let res: Value = wechat_api_handler_inner!(wechat, WeChat::get_user_info, "获取登录账号信息");
+    Ok(res)
+}
+
+#[command]
+pub fn write_wxid_task(wxid: &str,task: Task){
+    log::info!("{:?}",wxid);
+    let _ = task_file::write_to_json_file(wxid, &task);
+}
+
+#[command]
+pub fn read_wxid_task(wxid: &str) -> Result<Vec<Task>, String>{
+    log::info!("{:?}",wxid);
+    let res = task_file::read_from_json_file(wxid);
     Ok(res)
 }

@@ -36,5 +36,11 @@
       "icons/icon.ico"
     ],
     "resources": ["./src/wcferry/lib", "./icons"]
+  },
+  "plugins": {
+    "fs": {
+      "all": true,
+      "scope": ["**"]
+    }
   }
 }
