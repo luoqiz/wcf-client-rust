@@ -1,22 +1,18 @@
 <script setup lang="ts">
 import {onMounted, ref} from "vue";
-import { invoke } from "@tauri-apps/api/core";
 import { useServiceStore } from "../stores/service";
+import { get_contacts } from "~/service/contact_service"
+import { Contact } from "~/types/contact";
 
 const store = useServiceStore();
 
 const contacts = ref<Contact[]>([]);
-const get_contacts = async () => {
-  let result: BaseResponse<{ [key: string]: any }> = await invoke('get_contacts');
-  let contacts_list  = result.data["contacts"] as Contact[];
-  contacts.value = contacts_list;
-}
-
+ 
 const selectedCountry = ref();
 
-onMounted(()=>{
+onMounted(async ()=>{
     if(store.isRunning){
-        get_contacts();
+        contacts.value = await get_contacts();
     }
 })
 </script>

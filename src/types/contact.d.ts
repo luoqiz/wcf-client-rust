@@ -1,4 +1,4 @@
-class Contact {
+export type Contact = {
     city: string;
     code: string;
     country: string;
@@ -9,7 +9,7 @@ class Contact {
     wxid: string;
 }
 
-class UserInfo{
+export type UserInfo = {
     wxid: string;
     name: string;
     mobile: string;

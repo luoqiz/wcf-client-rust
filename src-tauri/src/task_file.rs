@@ -7,6 +7,8 @@ use std::path::Path;
 #[derive(Serialize, Deserialize)]
 pub struct Task {
     id: String,
+    enabled: bool,
+    remark: String,
     from_wxid_list: Vec<String>,
     to_wxid_list: Vec<String>,
 }
@@ -22,15 +24,15 @@ pub fn write_to_json_file(wxid: &str, task: &Task) -> std::io::Result<()> {
     }
 
     // 将 Task 实例序列化为 JSON 字符串
-    let json_string = serde_json::to_string(task).unwrap();
+    let json_string = serde_json::to_string_pretty(task).unwrap();
 
     // 打开文件以进行写入
     let mut file = File::create(file_path.clone())?;
-    log::info!("file_path -- {:?}",file_path.clone());
+
     // 获取文件的绝对路径并返回
     let absolute_path = fs::canonicalize(file_path.clone())?;
-   
-    log::info!("absolute_path -- {:?}",absolute_path);
+    log::info!("任务创建路径: {:?}",absolute_path);
+
     // 将 JSON 字符串写入文件
     file.write_all(json_string.as_bytes())?;
     

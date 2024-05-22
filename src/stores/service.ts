@@ -2,6 +2,8 @@ import { invoke } from '@tauri-apps/api/core';
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { listen } from "@tauri-apps/api/event";
+import { BaseResponse } from '~/types/base';
+import { UserInfo } from '~/types/contact';
 
 export const useServiceStore = defineStore('service', () => {
     // 当前状态是否运行
