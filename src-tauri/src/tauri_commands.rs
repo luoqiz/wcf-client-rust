@@ -1,12 +1,11 @@
-use std::{sync::{Arc, Mutex}};
-use futures_util::future::ok;
+use std::sync::{Arc, Mutex};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tauri::command;
-use crate::{task_file::{self, Task}, wcferry::{wcf::RpcContacts, WeChat}, wechat_api_handler, AppState};
+use crate::{pulgins::forward_task::task_file::Task, wcferry::WeChat, AppState};
 
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq,)]
+#[derive(Serialize, Deserialize, Clone, PartialEq,)]
 pub struct ApiResponse<T>
 where
     T: Serialize,
@@ -50,6 +49,13 @@ macro_rules! wechat_api_handler_inner {
             })),
         }
     }};
+    ($data:expr) => {{
+        Ok(json!(&ApiResponse {
+            status: 0,
+            error: None,
+            data: Some(data),
+        }))
+    }};
 }
 
 #[command]
@@ -69,14 +75,22 @@ pub async fn get_user_info(state: tauri::State<'_, Arc<Mutex<AppState>>>) -> Res
 }
 
 #[command]
-pub fn write_wxid_task(wxid: &str,task: Task){
+pub fn write_wxid_task(state: tauri::State<'_, Arc<Mutex<AppState>>>, wxid: &str, task: Task)->Result<String,String>{
     log::info!("{:?}",wxid);
-    let _ = task_file::write_to_json_file(wxid, &task);
+    let app_state = state.inner().lock().unwrap();
+    let task_manager_lock = &app_state.http_server.task_manager.clone();
+    let mut task_manager = task_manager_lock.lock().unwrap();
+    let _ = task_manager.add_or_remove_task(Some(task),None);
+    Ok("ok".to_string())
 }
 
 #[command]
-pub fn read_wxid_task(wxid: &str) -> Result<Vec<Task>, String>{
+pub fn read_wxid_task(state: tauri::State<'_, Arc<Mutex<AppState>>>, wxid: &str) -> Result<Vec<Task>, String>{
     log::info!("{:?}",wxid);
-    let res = task_file::read_from_json_file(wxid);
-    Ok(res)
+    let app_state = state.inner().lock().unwrap();
+    let task_manager_lock = &app_state.http_server.task_manager.clone();
+    let task_manager = task_manager_lock.lock().unwrap();
+    let tasks = &task_manager.tasks;
+    //wechat_api_handler_inner!(task_manager.tasks)
+    Ok(tasks.clone())
 }

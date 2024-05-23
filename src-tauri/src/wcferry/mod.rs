@@ -31,7 +31,9 @@ pub mod socketio_client;
 
 use wcf::{request::Msg as ReqMsg, response::Msg as RspMsg, Functions, WxMsg};
 
+use crate::pulgins::forward_task::task_manager::TaskManager;
 use crate::wcferry::socketio_client::SocketClient;
+use crate::wcferry::wcf::ForwardMsg;
 
 #[macro_export]
 macro_rules! create_request {
@@ -115,16 +117,17 @@ pub struct WeChat {
     pub cmd_socket: nng::Socket,
     pub msg_socket: Option<nng::Socket>,
     pub socketio_client: Option<Arc<Mutex<SocketClient>>>,
+    pub task_manager: Arc<std::sync::Mutex<TaskManager>>,
 }
 
-impl Default for WeChat {
-    fn default() -> Self {
-        WeChat::new(false, "".to_string(),"".to_string())
-    }
-}
+// impl Default for WeChat {
+//     fn default() -> Self {
+//         WeChat::new(false, "".to_string(),"".to_string())
+//     }
+// }
 
 impl WeChat {
-    pub fn new(debug: bool, cburl: String, wsurl: String) -> Self {
+    pub fn new(debug: bool, cburl: String, wsurl: String, task_manager: Arc<std::sync::Mutex<TaskManager>>) -> Self {
         // 创建ws客户端
         let mut socketio_client = None;
         if !wsurl.is_empty() {
@@ -146,6 +149,7 @@ impl WeChat {
             cmd_socket,
             msg_socket: None,
             socketio_client: socketio_client,
+            task_manager: task_manager,
         };
         info!("等待微信登录...");
         while !wc.clone().is_login().unwrap() {
@@ -297,6 +301,8 @@ impl WeChat {
                         send_http_msg(cb_client.clone(), cburl.clone(),msg.clone());
                         // ws   转发
                         send_ws_msg(wechat, msg.clone());
+                        // 任务转发
+                        forward_msg_ask(wechat,msg.clone());
                     }
                     Err(e) => {
                         error!("消息出队失败: {}", e);
@@ -336,6 +342,22 @@ impl WeChat {
                 //     let mut socket = scc.lock().await;
                 //     socket.send_msg(json!(msg)).await;
                 // });
+            }
+        }
+
+        fn forward_msg_ask(wechat: &mut WeChat, msg:  wcf::WxMsg) {
+            log::info!("启动转发任务");
+            let task_manager= &wechat.task_manager;
+            let task_manager_arc = task_manager.clone();
+            let mut task_manager = task_manager_arc.lock().unwrap();
+            let to_wxid_list = task_manager.get_to_wxids_by_wxid(msg.sender);
+            for ele in to_wxid_list {
+                let forward_msg = ForwardMsg{
+                    id: msg.id,
+                    receiver: ele,
+                };
+                let result = wechat.forward_msg(forward_msg);
+                log::info!("发送消息给用户 {:?}", result.unwrap());
             }
         }
 

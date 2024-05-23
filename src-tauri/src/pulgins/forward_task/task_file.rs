@@ -4,13 +4,13 @@ use std::io::{Read, Write};
 use std::path::Path;
 
 // 定义结构体
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Task {
-    id: String,
-    enabled: bool,
-    remark: String,
-    from_wxid_list: Vec<String>,
-    to_wxid_list: Vec<String>,
+    pub id: String,
+    pub enabled: bool,
+    pub remark: String,
+    pub from_wxid_list: Vec<String>,
+    pub to_wxid_list: Vec<String>,
 }
 
 // 将结构体写入 JSON 文件的函数

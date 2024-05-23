@@ -18,13 +18,12 @@ use winapi::{
 };
 
 use http_server::HttpServer;
-use crate::tauri_commands::get_contacts;
 
 mod endpoints;
 mod http_server;
 mod wcferry;
 mod tauri_commands;
-mod task_file;
+pub mod pulgins;
 
 struct FrontendLogger {
     app_handle: tauri::AppHandle,
