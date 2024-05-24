@@ -16,7 +16,7 @@ pub struct Task {
 // 将结构体写入 JSON 文件的函数
 pub fn write_to_json_file(wxid: &str, task: &Task) -> std::io::Result<()> {
     // 定义文件路径
-    let file_path = "".to_string() + wxid + "/task/"+ &task.id +".json";
+    let file_path = ".\\".to_string() + wxid + "\\task\\"+ &task.id +".json";
     
     // 创建嵌套目录
     if let Some(parent) = Path::new(&file_path.clone()).parent() {
