@@ -4,6 +4,7 @@
 use std::sync::{Arc, Mutex};
 
 use chrono::Local;
+use entity::KCoinfig;
 use log::{info, Level, LevelFilter, Log, Metadata, Record};
 use tauri::{App, AppHandle, command, Manager, Window, WindowEvent};
 use tauri::{menu::{MenuBuilder, MenuItemBuilder}, tray::{ClickType, TrayIconBuilder}};
@@ -23,7 +24,8 @@ mod endpoints;
 mod http_server;
 mod wcferry;
 mod tauri_commands;
-pub mod pulgins;
+mod pulgins;
+mod entity;
 
 struct FrontendLogger {
     app_handle: tauri::AppHandle,
@@ -52,6 +54,7 @@ impl Log for FrontendLogger {
 
 struct AppState {
     http_server: HttpServer,
+    // config: KCoinfig,
 }
 
 // 开启http_server
@@ -161,13 +164,16 @@ fn init_menu(app: &mut App) {
         .on_window_event(handle_system_tray_event)
         .manage(Arc::new(Mutex::new(AppState {
             http_server: HttpServer::new(),
+            // config: KCoinfig::read(),
         })))
         .invoke_handler(tauri::generate_handler![
             start_server, stop_server, confirm_exit,
             tauri_commands::get_contacts,
             tauri_commands::get_user_info,
             tauri_commands::write_wxid_task,
-            tauri_commands::read_wxid_task
+            tauri_commands::read_wxid_task,
+            tauri_commands::save_config,
+            tauri_commands::read_config
         ]);
 
     app1.run(tauri::generate_context!())

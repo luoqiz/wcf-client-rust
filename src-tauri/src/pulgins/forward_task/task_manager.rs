@@ -14,18 +14,21 @@ pub struct WxidMapping {
 }
 
 pub struct TaskManager {
+    // pub root_dir: String,
     pub wxid: String,
     pub tasks: Vec<Task>,
     pub mappings: HashMap<String, WxidMapping>,
 }
 
 impl TaskManager {
+    //, root_dir:String
     pub fn new(wxid: Option<String>) -> Self {
         match wxid {
             Some(value) => {
                 let tasks = task_file::read_from_json_file(&value);
                 let mappings = Self::aggregate_tasks(&tasks);
                 TaskManager {
+                    // root_dir,
                     wxid: value,
                     tasks: tasks,
                     mappings: mappings,
@@ -33,6 +36,7 @@ impl TaskManager {
             },
             None => {
                 TaskManager{
+                    // root_dir,
                     wxid: "".to_string(),
                     tasks: vec!(),
                     mappings: HashMap::new(),
@@ -85,9 +89,11 @@ impl TaskManager {
         }
     }
 
-    pub fn add_or_remove_task(&mut self, task: Option<Task>, remove_id: Option<String>) {
+    pub fn add_or_remove_task(&mut self, wxid: &str, task: Option<Task>, remove_id: Option<String>) {
         if let Some(task) = task {
-            let _ = task_file::write_to_json_file(&self.wxid,&task);
+            // 定义文件路径
+            // let file_path = ".\\".to_string() + wxid + "\\task\\"+ &task.id +".json";
+            let _ = task_file::write_to_json_file(wxid, &task);
             self.tasks.push(task);
         }
         if let Some(remove_id) = remove_id {
@@ -96,7 +102,7 @@ impl TaskManager {
         self.update_mappings();
     }
 
-    pub fn get_to_wxids_by_wxid(&mut self,wxid: String) -> Vec<String> {
+    pub fn get_to_wxids_by_wxid(&mut self, wxid: String) -> Vec<String> {
         let mapping =  self.mappings.get(&wxid);
         if let Some(maps) = mapping {
             maps.to_wxid_list.clone()

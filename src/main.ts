@@ -11,6 +11,10 @@ import "primevue/resources/themes/lara-light-green/theme.css";
 import "primevue/resources/primevue.min.css";
 import "primeicons/primeicons.css";
 
+import ArcoVue from '@arco-design/web-vue';
+import '@arco-design/web-vue/dist/arco.css';
+
+
 import { createPinia } from 'pinia'
 
 const router = createRouter({
@@ -24,6 +28,6 @@ app.use(PrimeVue, {
 
 const pinia = createPinia();
 app.use(pinia);
-
+app.use(ArcoVue);
 app.use(router);
 app.mount("#app");

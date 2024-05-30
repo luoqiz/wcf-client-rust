@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { invoke } from '@tauri-apps/api/core';
 import { useRouter } from "vue-router";
 import { ForwardTask } from '~/types/task';
 import { useServiceStore } from "~/stores/service";
-
+import { task_list_all } from "~/service/task_service"
 const router = useRouter();
 const serviceStore = useServiceStore();
 
@@ -16,8 +15,7 @@ const add_task = async () => {
 
 const read_wxid_task = async()=>{
   if(serviceStore.isRunning){
-    const result = await invoke("read_wxid_task", {wxid: serviceStore.userInfo?.wxid});
-    task_list.value = result as ForwardTask[]
+    task_list.value = await task_list_all();
   }
 }
 

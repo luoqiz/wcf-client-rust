@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { nanoid } from 'nanoid'
 import { useServiceStore } from "~/stores/service";
 import { get_contacts } from "~/service/contact_service"

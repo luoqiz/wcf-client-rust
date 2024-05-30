@@ -41,7 +41,8 @@ pub fn write_to_json_file(wxid: &str, task: &Task) -> std::io::Result<()> {
 
 // 从 JSON 文件读取数据并反序列化为结构体的函数
 pub fn read_from_json_file(wxid: &str) -> Vec<Task> {
-    let directory_path = ".\\".to_string() + wxid + "\\task"; // 当前目录
+    // 当前目录
+    let directory_path = ".\\".to_string() + wxid + "\\task"; 
 
     let mut result = Vec::new();
 
