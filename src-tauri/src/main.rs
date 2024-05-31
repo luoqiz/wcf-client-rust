@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex};
 
 use chrono::Local;
 use entity::KCoinfig;
+use global::initialize_global;
 use log::{info, Level, LevelFilter, Log, Metadata, Record};
 use tauri::{App, AppHandle, command, Manager, Window, WindowEvent};
 use tauri::{menu::{MenuBuilder, MenuItemBuilder}, tray::{ClickType, TrayIconBuilder}};
@@ -26,6 +27,8 @@ mod wcferry;
 mod tauri_commands;
 mod pulgins;
 mod entity;
+mod events;
+mod global;
 
 struct FrontendLogger {
     app_handle: tauri::AppHandle,
@@ -159,6 +162,7 @@ fn init_menu(app: &mut App) {
             // init_window(app.get_webview_window("main").unwrap());
             init_log(app.app_handle().clone());
             init_menu(app);
+            initialize_global();
             Ok(())
         })
         .on_window_event(handle_system_tray_event)

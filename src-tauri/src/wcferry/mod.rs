@@ -31,6 +31,8 @@ pub mod socketio_client;
 
 use wcf::{request::Msg as ReqMsg, response::Msg as RspMsg, Functions, WxMsg};
 
+use crate::events::event_handler::Event;
+use crate::global::GLOBAL;
 use crate::pulgins::forward_task::task_manager::TaskManager;
 use crate::wcferry::socketio_client::SocketClient;
 use crate::wcferry::wcf::ForwardMsg;
@@ -303,6 +305,14 @@ impl WeChat {
                         send_ws_msg(wechat, msg.clone());
                         // 任务转发
                         forward_msg_ask(wechat,msg.clone());
+                        let rt = Runtime::new().unwrap();
+                        rt.block_on(async move{
+                            let global = GLOBAL.get().unwrap();
+                            // let event_bus_arc = global_lock.event_bus.clone();
+                             let event_bus = global.event_bus.lock().unwrap();
+                            // let event_bus_lock = event_bus.lock().unwrap();
+                            event_bus.publish(Event::ClientMessage("1234567890098765422fhjklsl;dfsakhngiwjehfksdnfkjdshgkj".to_string())).await;
+                        });
                     }
                     Err(e) => {
                         error!("消息出队失败: {}", e);

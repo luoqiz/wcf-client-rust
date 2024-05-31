@@ -4699,6 +4699,7 @@ dependencies = [
 name = "wcf-client-rust"
 version = "0.0.3"
 dependencies = [
+ "async-trait",
  "base64 0.22.1",
  "chrono",
  "env_logger",
@@ -4706,6 +4707,7 @@ dependencies = [
  "log",
  "nng",
  "prost",
+ "rand 0.8.5",
  "reqwest",
  "rust_socketio",
  "serde",
