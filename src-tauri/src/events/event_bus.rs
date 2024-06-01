@@ -1,5 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
+use tokio::runtime::Runtime;
+
 use super::event_handler::{Event, EventHandler};
 
 pub struct EventBus {
@@ -22,16 +24,19 @@ impl EventBus {
 
 
 
-    pub async fn publish(&self, event: Event) {
+    pub fn publish(&self, event: Event) {
         let event_type = match &event {
             Event::ClientMessage(_) => "ClientMessage",
+            Event::SocketIoMessage(_) => "s",
         };
-
+         // 创建一个新的 Tokio 运行时
+        let rt = Arc::new(Runtime::new().unwrap());
          // 克隆处理器列表以避免生命周期问题
-         if let Some(handlers) = self.handlers.get(event_type).cloned() {
+        if let Some(handlers) = self.handlers.get(event_type).cloned() {
+            // let rt = tokio::runtime::Builder::new_multi_thread().worker_threads(handlers.len()).enable_all().build().unwrap();
             for handler in handlers {
                 let event = event.clone();
-                tokio::spawn(async move {
+                rt.spawn(async move{
                     handler.handle(event).await;
                 });
             }

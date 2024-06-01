@@ -25,13 +25,14 @@ chrono = "0.4.38"
 prost = "0.12.6"
 env_logger = "0.11.3"
 tokio = { version = "1.37.0", features = ["full"] }
-reqwest = { version = "0.12.4", features = ["blocking", "json"] }
+#reqwest = { version = "0.12.4", features = [ "json"] }
 winapi = { version = "0.3.9", features = ["winuser", "synchapi"] }
 rust_socketio = { version = "^0.6.0", features = ["async"] }
 #rust_socketio = { version = "^0.6.0"}
 futures-util = "0.3.30"
 async-trait = "0.1.80"
 rand = "0.8.5"
+ureq = { version = "2.9.7", features = ["json"] }
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem

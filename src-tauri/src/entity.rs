@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct KCoinfig {
-    cburl: String,
-    wsurl: String,
-    file_dir: String,
+    pub cburl: String,
+    pub wsurl: String,
+    pub file_dir: String,
 }
