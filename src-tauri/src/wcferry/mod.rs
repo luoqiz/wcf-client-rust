@@ -1,11 +1,6 @@
 use log::{debug, error, info, warn};
 use nng::options::{Options, RecvTimeout, SendTimeout};
 use prost::Message;
-use reqwest::Client;
-// use reqwest::blocking::Client;
-use serde_json::json;
-use tokio::runtime:: Runtime;
-use tokio::sync::Mutex;
 use std::os::windows::process::CommandExt;
 use std::sync::Arc;
 use std::sync::{
@@ -35,7 +30,6 @@ use wcf::{request::Msg as ReqMsg, response::Msg as RspMsg, Functions, WxMsg};
 use crate::events::event_handler::Event;
 use crate::global::GLOBAL;
 use crate::pulgins::forward_task::task_manager::TaskManager;
-use crate::wcferry::socketio_client::SocketClient;
 use crate::wcferry::wcf::ForwardMsg;
 
 #[macro_export]
@@ -193,15 +187,7 @@ impl WeChat {
                 .output(),
             "服务停止失败"
         );
-        
-        if let Some(sc_cliet) = &self.socketio_client {
-            let amst =  sc_cliet.clone();
-            tokio::spawn(async move {
-                let mut ss = amst.lock().await;
-                let _ = ss.disconnect().await;
-            });
-        }
-       
+               
         debug!("服务已停止: {}", CMD_URL);
         Ok(())
     }
@@ -280,7 +266,7 @@ impl WeChat {
             let _ = wechat.disable_recv_msg().unwrap();
         }
 
-        fn forward_msg(wechat: &mut WeChat, cburl: String, rx: Receiver<WxMsg>) {
+        fn forward_msg(wechat: &mut WeChat, rx: Receiver<WxMsg>) {
             while wechat.listening.load(Ordering::Relaxed) {
                 match rx.recv() {
                     Ok(msg) => {
@@ -336,7 +322,7 @@ impl WeChat {
                     // rt.block_on(move ||{
                     //     forward_msg(&mut wc2, cburl, rx);
                     // });
-                    thread::spawn(move || forward_msg(&mut wc2, cburl, rx));
+                    thread::spawn(move || forward_msg(&mut wc2, rx));
                    
                     return Ok(true);
                 } else {

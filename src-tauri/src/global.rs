@@ -1,4 +1,4 @@
-use std::{fs, sync::{Arc, Mutex, OnceLock}};
+use std::{fs, sync::{Arc, Mutex, OnceLock}, thread};
 
 use rand::Rng;
 
@@ -10,7 +10,7 @@ pub struct GlobalState {
     pub task_manager: Arc<Mutex<TaskManager>>,
     pub event_bus: Arc<Mutex<EventBus>>,
     pub config: Arc<KCoinfig>,
-    pub socketio_client: Option<Arc<Mutex<SocketClient>>>,
+    pub socketio_client: Option<Arc<tokio::sync::Mutex<SocketClient>>>,
 }
 // 全局变量
 pub static GLOBAL: OnceLock<Arc<GlobalState>> = OnceLock::new();
@@ -40,10 +40,10 @@ pub fn initialize_global() {
 
     // 初始化 socketio 客户端
     // 创建ws客户端
-    let wsurl = k_config.wsurl;
+    let wsurl = k_config.wsurl.clone();
     let mut socketio_client = None;
     if !wsurl.is_empty() {
-        let socket_client = Arc::new(Mutex::new(SocketClient::new(wsurl.clone())));
+        let socket_client = Arc::new(tokio::sync::Mutex::new(SocketClient::new(wsurl.clone())));
         let temp_sc = socket_client.clone();
         tokio::spawn(async move {
             let mut ss = temp_sc.lock().await;
@@ -77,3 +77,11 @@ fn init_config() -> KCoinfig {
     kconfig
 }
 
+// 关闭socketio
+// if let Some(sc_cliet) = &self.socketio_client {
+//     let amst =  sc_cliet.clone();
+//     tokio::spawn(async move {
+//         let mut ss = amst.lock().await;
+//         let _ = ss.disconnect().await;
+//     });
+// }

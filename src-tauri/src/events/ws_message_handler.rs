@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use serde_json::json;
 
 use super::event_handler::{Event, EventHandler};
 use crate::global::GLOBAL;
@@ -16,7 +17,7 @@ impl EventHandler for WsMessageHandler {
             log::info!("ws处理器 {} -- 接收到信息: {:?}", self.id, msg);
 
             let global = GLOBAL.get().unwrap();
-            let client = global.socketio_client;
+            let socket_arc = &global.socketio_client;
             if let Some(client) = socket_arc {
                 let mut socket = client.lock().await;
                 socket.send_msg(json!(msg)).await;

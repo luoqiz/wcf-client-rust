@@ -11,17 +11,19 @@ use tokio::sync::Mutex;
 #[derive(Clone)]
 pub struct SocketClient {
     pub url: String,
+    pub client: Option<Arc<Mutex<Client>>>,
 }
 
 impl SocketClient {
     pub fn new(wsurl: String) -> Self {
         let socket_client = SocketClient{
             url: wsurl ,
+            client: Option::None
         };
         socket_client
     }
 
-    pub async fn connect(&mut self) -> std::io::Result<()>{
+    pub async fn connect(&mut self)   -> std::io::Result<()>{
         let callback = |payload: Payload, _socket: Client| {
             async move {
                 match payload {
