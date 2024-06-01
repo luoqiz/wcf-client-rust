@@ -10,7 +10,7 @@ pub struct GlobalState {
     pub task_manager: Arc<Mutex<TaskManager>>,
     pub event_bus: Arc<Mutex<EventBus>>,
     pub config: Arc<KCoinfig>,
-    pub socketio_client: Option<Arc<tokio::sync::Mutex<SocketClient>>>,
+    pub socketio_client: Option<Arc< Mutex<SocketClient>>>,
 }
 // 全局变量
 pub static GLOBAL: OnceLock<Arc<GlobalState>> = OnceLock::new();
@@ -43,11 +43,11 @@ pub fn initialize_global() {
     let wsurl = k_config.wsurl.clone();
     let mut socketio_client = None;
     if !wsurl.is_empty() {
-        let socket_client = Arc::new(tokio::sync::Mutex::new(SocketClient::new(wsurl.clone())));
+        let socket_client = Arc::new( Mutex::new(SocketClient::new(wsurl.clone())));
         let temp_sc = socket_client.clone();
-        tokio::spawn(async move {
-            let mut ss = temp_sc.lock().await;
-            let _ = ss.connect().await;
+        thread::spawn(move || {
+            let mut ss = temp_sc.lock().unwrap();
+            let _ = ss.connect();
         });
         socketio_client = Some(socket_client);
     }

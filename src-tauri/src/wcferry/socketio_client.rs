@@ -1,12 +1,7 @@
-use std::{sync::Arc, thread, time::Duration};
+use std::{sync::{Arc,Mutex}, thread, time::Duration};
 use serde_json::{json, Value};
-use log::{debug, info};
-use futures_util::FutureExt;
-use rust_socketio::{
-    asynchronous::{Client, ClientBuilder},
-    Payload,
-};
-use tokio::sync::Mutex;
+use log::info;
+use rust_socketio::{client::Client, ClientBuilder, Payload, RawClient};
 
 #[derive(Clone)]
 pub struct SocketClient {
@@ -23,73 +18,67 @@ impl SocketClient {
         socket_client
     }
 
-    pub async fn connect(&mut self)   -> std::io::Result<()>{
-        let callback = |payload: Payload, _socket: Client| {
-            async move {
-                match payload {
-                    Payload::Text(values) => log::info!("Received: {:#?}", values),
-                    Payload::Binary(bin_data) => log::info!("Received bytes: {:#?}", bin_data),
-                    _ => {}
-                }
+    pub fn connect(&mut self)   -> std::io::Result<()>{
+
+        let callback = |payload: Payload, socket: RawClient| {
+            match payload {
+                Payload::String(str) => println!("Received: {}", str),
+                Payload::Binary(bin_data) => println!("Received bytes: {:#?}", bin_data),
+                Payload::Text(_) => todo!(),
             }
-                .boxed()
+            socket.emit("test", json!({"got ack": true})).expect("Server unreachable")
         };
+
+
         // 发起连接
         let socket = ClientBuilder::new(self.url.clone())
-            // .namespace("/")
+            .namespace("/")
             .on("MSG", callback)
-            .on("error", |err, _| {
-                async move { eprintln!("Error: {:#?}", err) }.boxed()
-            })
-            .on("PONG", |_,_|{
-                async move { debug!("服务器返回pong信息")}.boxed()
-            })
+            .on("error", |err, _| eprintln!("Error: {:#?}", err))
+            .on("PONG", |payload,_|{ println!("PONG:payload{:#?}", payload)})
             .connect()
-            .await
             .expect("Connection failed");
      
         let am_client = Arc::new(Mutex::new(socket));
         
         self.client = Some(am_client.clone());
         let task_ping = am_client.clone();
-        tokio::spawn(async move {
+        thread::spawn(  move ||{
             loop {
                 let json_payload = json!({"type": "ping"});
-                let client = task_ping.lock().await;
+                let client = task_ping.lock().unwrap();
                 client
                     .emit("PING",json_payload)
-                    .await
                     .expect("Server unreachable");
                  // 睡眠定期推送数据
-                 thread::sleep(Duration::from_secs(10));
+                thread::sleep(Duration::from_secs(10));
             }
         });
         log::info!("开启websocket {:?}", self.url.clone());
         Ok(())
     }
  
-    pub async fn disconnect(&mut self) -> std::io::Result<()> {
+    pub   fn disconnect(&mut self) -> std::io::Result<()> {
         info!("等待 socketIo 断开连接");
         let temp = self.client.clone();
         if let Some(value) = temp {
-            let client = value.lock().await;
-            let _ = client.disconnect().await?;
+            let client = value.lock().unwrap();
+            let _ = client.disconnect().unwrap();
         }
         info!("socketIo 已断开连接");
         Ok(())
     }
 
-    pub async fn send_msg(&mut self, payload: Value){
+    pub fn send_msg(&mut self, payload: Value){
         let task_msg = self.client.clone();
-        if let Some(value) = task_msg {
-            log::info!("ws发送消息: {:?}--",payload);
-            // tokio::spawn(async move {
-                // let json_payload1 = json!({"type": "msg"});
-                let client = value.lock().await;
-                client.emit("MSG",payload)
-                    .await
-                    .expect("Server unreachable");
-            // });
+        if let Some(task_ping) = task_msg {
+            thread::spawn(  move ||{
+                let client = task_ping.lock().unwrap();
+                    client
+                        .emit("MSG",payload)
+                        .expect("Server unreachable");
+            });
+
         }
     }
 }

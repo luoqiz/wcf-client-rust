@@ -19,23 +19,9 @@ impl EventHandler for WsMessageHandler {
             let global = GLOBAL.get().unwrap();
             let socket_arc = &global.socketio_client;
             if let Some(client) = socket_arc {
-                let mut socket = client.lock().await;
-                socket.send_msg(json!(msg)).await;
+                let mut socket = client.lock().unwrap();
+                socket.send_msg(json!(msg));
             }
-            
-
-            // let rt = Runtime::new().unwrap();
-            //     rt.block_on(async move{
-            //         let mut socket = client.lock().await;
-            //         socket.send_msg(json!(msg)).await;
-            //     });
-
-             // 异步发不了消息，暂不了解原因
-                // let scc = client.clone();
-                // rt.spawn( async move{
-                //     let mut socket = scc.lock().await;
-                //     socket.send_msg(json!(msg)).await;
-                // });
         }
     }
 }
