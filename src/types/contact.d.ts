@@ -7,6 +7,8 @@ export type Contact = {
     province: string;
     remark: string;
     wxid: string;
+    label: string;
+    value: string;
 }
 
 export type UserInfo = {

@@ -9,21 +9,17 @@ import { ForwardTask } from '~/types/task';
 
 const serviceStore = useServiceStore();
 
-// type ContactSelect = Contact & {
-//     select: boolean = false;
-// }
-
 // 所有好友列表
 const contacts = ref<Contact[]>([]);
 // 所有参与的用户
 const contact_select = ref<Contact[]>([]);
- 
-// 绑定
-const contacts_option = ref<Array<Contact[]>>([]);
-contacts_option.value = [[],[]];
+// 源用户
+const contact_org = ref<Contact[]>([]);
+// 目标用户
+const contact_target = ref<Contact[]>([]);
 
 watch(contact_select,()=>{
-  contacts_option.value[0] = contact_select.value;
+  contact_org.value = contact_select.value;
 });
 
 const current_task = ref<ForwardTask>({
@@ -35,8 +31,8 @@ const current_task = ref<ForwardTask>({
 })
 
 const add_task = ()=>{
-  current_task.value.from_wxid_list = contacts_option.value[0].map(item => {return item.wxid});
-  current_task.value.to_wxid_list = contacts_option.value[1].map(item => {return item.wxid});
+  current_task.value.from_wxid_list = contact_org.value.map(item => {return item.wxid});
+  current_task.value.to_wxid_list = contact_target.value.map(item => {return item.wxid});
   task_save(serviceStore.userInfo!.wxid, current_task.value );
 }
 
@@ -49,27 +45,28 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="w-full">
-    <Button @click="add_task"> 保存 </Button>
-    <InputText type="text" v-model="current_task.remark" />
-    <MultiSelect v-model="contact_select" 
-        :options="contacts" filter optionLabel="remark" placeholder="选择参与的用户"
-        :maxSelectedLabels="3" class="w-full md:w-20rem" />
+  <div class="w-full flex flex-col gap-16px">
+    <a-input :style="{width:'320px'}" placeholder="此任务名称" v-model="current_task.remark"/>
+    <a-select class="w-full" placeholder="选择参与的用户" 
+        multiple v-model="contact_select" :filter-option="true">
+      <a-option v-for="item of contacts" :value="item">{{item.remark}}</a-option>
+    </a-select>
+
     <div class="card">
-        <PickList v-model="contacts_option" listStyle="height:342px" dataKey="id" breakpoint="1400px">
-            <template #sourceheader> 源信息用户 </template>
-            <template #targetheader> 目标用户 </template>
-            <template #item="slotProps">
-              <div class="flex flex-column gap-2">
-                  <span class="font-bold">{{ slotProps.item.name }}</span>
-                  <div class="flex align-items-center gap-2">
-                      <!-- <i class="pi pi-tag text-sm"></i> -->
-                      --- <span>{{ slotProps.item.wxid }}</span>
-                  </div>
-              </div>
-            </template>
-        </PickList>
+        <a-transfer
+          show-search
+          :data="contact_org"
+          v-model="contact_target"
+          :source-input-search-props="{
+            placeholder:'source item search'
+          }"
+          :target-input-search-props="{
+            placeholder:'target item search'
+          }"
+        >
+        </a-transfer>
     </div>
+    <a-button type="primary" @click="add_task">保存</a-button>
   </div>
 </template>
 <style scoped></style>

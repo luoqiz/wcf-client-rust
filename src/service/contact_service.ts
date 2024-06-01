@@ -10,6 +10,8 @@ export const get_contacts = async () => {
     if(!item.remark){
       item.remark = item.name;
     }
+    item.label = item.remark;
+    item.value = item.wxid;
     contact_remark.push(item);
   }
   return contact_remark;
