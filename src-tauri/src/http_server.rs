@@ -2,6 +2,7 @@ use log::{debug, error};
 use std::sync::{Arc,Mutex};
 use tokio::sync::oneshot;
 use crate::endpoints;
+use crate::global::GLOBAL;
 use crate::pulgins::forward_task::task_manager::{self, TaskManager};
 use crate::wcferry::WeChat;
 
@@ -20,9 +21,18 @@ impl HttpServer {
         }
     }
 
+    fn set_wechat(new_wechat: Option<Arc<Mutex<WeChat>>>) {
+            let global = GLOBAL.get().unwrap().clone();
+            let mut wechat_lock = global.wechat.lock().unwrap();
+            *wechat_lock = new_wechat;
+    }
+
     pub fn start(&mut self, host: [u8; 4], port: u16, cburl: String, wsurl: String) -> Result<(), String> {
-        let wechat = Arc::new(Mutex::new(WeChat::new(true, cburl.clone(),wsurl.clone(),self.task_manager.clone())));
+        let wechat: Arc<Mutex<WeChat>> = Arc::new(Mutex::new(WeChat::new(true, cburl.clone(),wsurl.clone(),self.task_manager.clone())));
         self.wechat = Some(wechat.clone());
+
+        Self::set_wechat(Some(wechat.clone())) ;
+
         let (shutdown_tx, shutdown_rx) = oneshot::channel();
         let addr = (host, port);
 

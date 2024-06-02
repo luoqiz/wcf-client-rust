@@ -3,6 +3,8 @@ use serde_json::{json, Value};
 use log::info;
 use rust_socketio::{client::Client, ClientBuilder, Payload, RawClient};
 
+use crate::{global::GLOBAL, wcferry::wcf};
+
 #[derive(Clone)]
 pub struct SocketClient {
     pub url: String,
@@ -22,11 +24,35 @@ impl SocketClient {
 
         let callback = |payload: Payload, socket: RawClient| {
             match payload {
-                Payload::String(str) => println!("Received: {}", str),
                 Payload::Binary(bin_data) => println!("Received bytes: {:#?}", bin_data),
                 Payload::Text(_) => todo!(),
+                _ => (),
             }
             socket.emit("test", json!({"got ack": true})).expect("Server unreachable")
+        };
+
+        
+        let func_send_rich_txt = |payload: Payload, _| {
+            match payload {
+                Payload::Binary(bin_data) => println!("Received bytes: {:#?}", bin_data),
+                Payload::Text(res) => {
+                    log::info!("---- {:?}",res);
+                    let rich_msg_vec: Result< Vec<wcf::RichText>, serde_json::Error> = res.into_iter()
+                        .map(|value| serde_json::from_value(value))
+                        .collect();
+                    let global = GLOBAL.get().unwrap();
+                    
+                    for rich_text in rich_msg_vec.unwrap() {
+                        let   wechat_arc = global.wechat.clone();
+                        let wechat1 = wechat_arc.lock().unwrap();
+                        {
+                            let wechat2 = wechat1.clone().unwrap();
+                            let _ = wechat2.lock().unwrap().send_rich_text(rich_text);
+                        }
+                    }
+                },
+                _ => ()
+            }
         };
 
 
@@ -36,6 +62,7 @@ impl SocketClient {
             .on("MSG", callback)
             .on("error", |err, _| eprintln!("Error: {:#?}", err))
             .on("PONG", |payload,_|{ println!("PONG:payload{:#?}", payload)})
+            .on("FuncSendRichTxt", func_send_rich_txt)
             .connect()
             .expect("Connection failed");
      

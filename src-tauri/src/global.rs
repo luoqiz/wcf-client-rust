@@ -6,11 +6,11 @@ use crate::{entity::KCoinfig, events::{event_bus::EventBus, http_message_handler
 
 // 全局参数结构
 pub struct GlobalState {
-    pub wechat: Option<Arc<Mutex<WeChat>>>,
+    pub wechat: Arc<Mutex<Option<Arc<Mutex<WeChat>>>>>,
     pub task_manager: Arc<Mutex<TaskManager>>,
     pub event_bus: Arc<Mutex<EventBus>>,
     pub config: Arc<KCoinfig>,
-    pub socketio_client: Option<Arc< Mutex<SocketClient>>>,
+    pub socketio_client: Option<Arc<Mutex<SocketClient>>>,
 }
 // 全局变量
 pub static GLOBAL: OnceLock<Arc<GlobalState>> = OnceLock::new();
@@ -53,7 +53,7 @@ pub fn initialize_global() {
     }
 
     let global_state: GlobalState = GlobalState{
-        wechat: None,
+        wechat: Arc::new(Mutex::new(None)),
         task_manager: Arc::new(Mutex::new(TaskManager::new(None))),
         event_bus: event_bus_arc,
         config: Arc::new( k_config),
