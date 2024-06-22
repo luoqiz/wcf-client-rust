@@ -1,8 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { useConfigStore } from "../stores/config";
 const configStore = useConfigStore();
 
-const handleSubmit = (data) => {
+const handleSubmit = () => {
     configStore.update();
 };
 

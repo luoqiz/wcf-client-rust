@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {onMounted, ref} from "vue";
+import { onMounted } from "vue";
 import { listen } from "@tauri-apps/api/event";
 import Textarea from 'primevue/textarea';
 import { useLoggerStore } from "../stores/logger";
