@@ -1,6 +1,6 @@
 {
   "productName": "wcf-client-rust",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "identifier": "com.iamteer.wcf",
   "build": {
     "beforeDevCommand": "pnpm dev",
@@ -35,7 +35,26 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": ["./src/wcferry/lib", "./icons"]
+    "resources": ["./src/wcferry/lib", "./icons", "./config.json"],
+    "windows": {
+      "allowDowngrades": true,
+      "certificateThumbprint": null,
+      "digestAlgorithm": null,
+      "timestampUrl": null,
+      "tsp": false,
+      "webviewFixedRuntimePath": null,
+      "webviewInstallMode": {
+        "silent": true,
+        "type": "downloadBootstrapper"
+      },
+      "wix": {
+        "language": "zh-CN"
+      },
+      "nsis": {
+        "languages": ["SimpChinese", "English"],
+        "displayLanguageSelector": true
+      }
+    }
   },
   "plugins": {
     "fs": {
