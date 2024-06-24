@@ -44,6 +44,12 @@
 
 </details>
 
+## 界面预览
+
+![image](https://github.com/luoqiz/wcf-client-rust/blob/master/doc/image/1.jpg)
+![image](https://github.com/luoqiz/wcf-client-rust/blob/master/doc/image/2.jpg)
+![image](https://github.com/luoqiz/wcf-client-rust/blob/master/doc/image/3.jpg)
+
 ## 快速开始
 >ℹ️ 如果跑过机器人，先将机器人停止，然后退出微信，再开始，以避免奇奇怪怪的问题。
 
