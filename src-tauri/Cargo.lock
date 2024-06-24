@@ -3046,11 +3046,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a6a8672db895d567b3c0b8a4c0d3e98113ebb32badf6ce66004e743e5ee1e1e"
 dependencies = [
  "adler32",
- "async-stream",
  "backoff",
  "base64 0.21.7",
  "bytes",
- "futures-util",
  "log",
  "native-tls",
  "rand 0.8.5",
@@ -3058,7 +3056,6 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
- "tokio",
  "url",
 ]
 
@@ -4416,6 +4413,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
 
 [[package]]
+name = "ureq"
+version = "2.9.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d11a831e3c0b56e438a28308e7c810799e3c118417f342d30ecec080105395cd"
+dependencies = [
+ "base64 0.22.1",
+ "flate2",
+ "log",
+ "once_cell",
+ "rustls",
+ "rustls-pki-types",
+ "rustls-webpki",
+ "serde",
+ "serde_json",
+ "url",
+ "webpki-roots",
+]
+
+[[package]]
 name = "url"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4699,6 +4715,7 @@ dependencies = [
 name = "wcf-client-rust"
 version = "0.0.3"
 dependencies = [
+ "async-trait",
  "base64 0.22.1",
  "chrono",
  "env_logger",
@@ -4706,7 +4723,7 @@ dependencies = [
  "log",
  "nng",
  "prost",
- "reqwest",
+ "rand 0.8.5",
  "rust_socketio",
  "serde",
  "serde_json",
@@ -4714,6 +4731,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-shell",
  "tokio",
+ "ureq",
  "utoipa",
  "utoipa-swagger-ui",
  "warp",

@@ -4,6 +4,8 @@
 use std::sync::{Arc, Mutex};
 
 use chrono::Local;
+use entity::KCoinfig;
+use global::initialize_global;
 use log::{info, Level, LevelFilter, Log, Metadata, Record};
 use tauri::{App, AppHandle, command, Manager, Window, WindowEvent};
 use tauri::{menu::{MenuBuilder, MenuItemBuilder}, tray::{ClickType, TrayIconBuilder}};
@@ -22,6 +24,11 @@ use http_server::HttpServer;
 mod endpoints;
 mod http_server;
 mod wcferry;
+mod tauri_commands;
+mod pulgins;
+mod entity;
+mod events;
+mod global;
 
 struct FrontendLogger {
     app_handle: tauri::AppHandle,
@@ -50,6 +57,7 @@ impl Log for FrontendLogger {
 
 struct AppState {
     http_server: HttpServer,
+    // config: KCoinfig,
 }
 
 // 开启http_server
@@ -109,33 +117,6 @@ fn handle_system_tray_event(window: &Window, event: &WindowEvent) {
     }
 }
 
-// 初始化窗口位置(暂时不用自定义,让窗口居中显示)
-// fn init_window(window: tauri::WebviewWindow) {
-//     window.hide().unwrap();
-//     if let Ok(Some(monitor)) = window.primary_monitor() {
-//         let monitor_size = monitor.size();
-//         if let Ok(window_size) = window.outer_size() {
-//             let x = (monitor_size.width as i32 - window_size.width as i32) / 2;
-//             let y = (monitor_size.height as i32 - window_size.height as i32) / 2;
-//             window
-//                 .set_position(tauri::Position::Logical(tauri::LogicalPosition {
-//                     x: x.into(),
-//                     y: y.into(),
-//                 }))
-//                 .unwrap();
-//         } else {
-//             let x = (monitor_size.width as i32 - 640) / 2;
-//             let y = (monitor_size.height as i32 - 320) / 2;
-//             window
-//                 .set_position(tauri::Position::Logical(tauri::LogicalPosition {
-//                     x: x.into(),
-//                     y: y.into(),
-//                 }))
-//                 .unwrap();
-//         }
-//     }
-//     window.show().unwrap();
-// }
 
 // 初始化日志功能
 fn init_log(handle: AppHandle) {
@@ -173,26 +154,7 @@ fn init_menu(app: &mut App) {
         .build(app);
 }
 
-
   fn main() {
-
-    // let mutex_name = b"Global\\wcfrust_app_mutex\0";
-    // unsafe {
-    //     let handle = CreateMutexA(ptr::null_mut(), 0, mutex_name.as_ptr() as *const i8);
-    //     if handle.is_null() {
-    //         eprintln!("Failed to create mutex.");
-    //         return;
-    //     }
-    //     if GetLastError() == ERROR_ALREADY_EXISTS {
-    //         let window_name = "WcfRust\0".as_ptr() as *const i8;
-    //         let hwnd = FindWindowA(ptr::null(), window_name);
-    //         if !hwnd.is_null() {
-    //             ShowWindow(hwnd, SW_RESTORE);
-    //             SetForegroundWindow(hwnd);
-    //         }
-    //         return;
-    //     }
-    // }
 
     let app1 = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -200,13 +162,23 @@ fn init_menu(app: &mut App) {
             // init_window(app.get_webview_window("main").unwrap());
             init_log(app.app_handle().clone());
             init_menu(app);
+            initialize_global();
             Ok(())
         })
         .on_window_event(handle_system_tray_event)
         .manage(Arc::new(Mutex::new(AppState {
             http_server: HttpServer::new(),
+            // config: KCoinfig::read(),
         })))
-        .invoke_handler(tauri::generate_handler![start_server, stop_server, confirm_exit]);
+        .invoke_handler(tauri::generate_handler![
+            start_server, stop_server, confirm_exit,
+            tauri_commands::get_contacts,
+            tauri_commands::get_user_info,
+            tauri_commands::write_wxid_task,
+            tauri_commands::read_wxid_task,
+            tauri_commands::save_config,
+            tauri_commands::read_config
+        ]);
 
     app1.run(tauri::generate_context!())
         .expect("error while running tauri application");

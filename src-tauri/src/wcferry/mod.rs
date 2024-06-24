@@ -1,10 +1,6 @@
 use log::{debug, error, info, warn};
 use nng::options::{Options, RecvTimeout, SendTimeout};
 use prost::Message;
-use reqwest::blocking::Client;
-use serde_json::json;
-use tokio::runtime:: Runtime;
-use tokio::sync::Mutex;
 use std::os::windows::process::CommandExt;
 use std::sync::Arc;
 use std::sync::{
@@ -31,7 +27,10 @@ pub mod socketio_client;
 
 use wcf::{request::Msg as ReqMsg, response::Msg as RspMsg, Functions, WxMsg};
 
-use crate::wcferry::socketio_client::SocketClient;
+use crate::events::event_handler::Event;
+use crate::global::GLOBAL;
+use crate::pulgins::forward_task::task_manager::TaskManager;
+use crate::wcferry::wcf::ForwardMsg;
 
 #[macro_export]
 macro_rules! create_request {
@@ -114,28 +113,18 @@ pub struct WeChat {
     pub listening: Arc<AtomicBool>,
     pub cmd_socket: nng::Socket,
     pub msg_socket: Option<nng::Socket>,
-    pub socketio_client: Option<Arc<Mutex<SocketClient>>>,
+    pub task_manager: Arc<std::sync::Mutex<TaskManager>>,
 }
 
-impl Default for WeChat {
-    fn default() -> Self {
-        WeChat::new(false, "".to_string(),"".to_string())
-    }
-}
+// impl Default for WeChat {
+//     fn default() -> Self {
+//         WeChat::new(false, "".to_string(),"".to_string())
+//     }
+// }
 
 impl WeChat {
-    pub fn new(debug: bool, cburl: String, wsurl: String) -> Self {
-        // 创建ws客户端
-        let mut socketio_client = None;
-        if !wsurl.is_empty() {
-            let socket_client = Arc::new(Mutex::new(SocketClient::new(wsurl.clone())));
-            let temp_sc = socket_client.clone();
-            tokio::spawn(async move {
-                let mut ss = temp_sc.lock().await;
-                let _ = ss.connect().await;
-            });
-            socketio_client = Some(socket_client);
-        }
+    pub fn new(debug: bool, cburl: String, wsurl: String, task_manager: Arc<std::sync::Mutex<TaskManager>>) -> Self {
+        
 
         let exe = env::current_dir().unwrap().join("src\\wcferry\\lib\\wcf.exe");
         let _ = WeChat::start(exe.clone(), debug);
@@ -145,7 +134,7 @@ impl WeChat {
             listening: Arc::new(AtomicBool::new(false)),
             cmd_socket,
             msg_socket: None,
-            socketio_client: socketio_client,
+            task_manager: task_manager,
         };
         info!("等待微信登录...");
         while !wc.clone().is_login().unwrap() {
@@ -198,15 +187,7 @@ impl WeChat {
                 .output(),
             "服务停止失败"
         );
-        
-        if let Some(sc_cliet) = &self.socketio_client {
-            let amst =  sc_cliet.clone();
-            tokio::spawn(async move {
-                let mut ss = amst.lock().await;
-                let _ = ss.disconnect().await;
-            });
-        }
-       
+               
         debug!("服务已停止: {}", CMD_URL);
         Ok(())
     }
@@ -285,18 +266,17 @@ impl WeChat {
             let _ = wechat.disable_recv_msg().unwrap();
         }
 
-        fn forward_msg(wechat: &mut WeChat, cburl: String, rx: Receiver<WxMsg>) {
-            let mut cb_client = None;
-            if !cburl.is_empty() {
-                cb_client = Some(Client::new());
-            }
+        fn forward_msg(wechat: &mut WeChat, rx: Receiver<WxMsg>) {
             while wechat.listening.load(Ordering::Relaxed) {
                 match rx.recv() {
                     Ok(msg) => {
-                        // http 转发
-                        send_http_msg(cb_client.clone(), cburl.clone(),msg.clone());
-                        // ws   转发
-                        send_ws_msg(wechat, msg.clone());
+                        // 任务转发
+                        forward_msg_ask(wechat,msg.clone());
+                        
+                        // 发送到消息监听器中
+                        let global = GLOBAL.get().unwrap();
+                        let event_bus = global.event_bus.lock().unwrap();
+                        event_bus.publish(Event::ClientMessage(msg.clone()));
                     }
                     Err(e) => {
                         error!("消息出队失败: {}", e);
@@ -305,37 +285,19 @@ impl WeChat {
             }
         }
 
-        fn send_http_msg(cb_client: Option<Client>, cburl: String, msg: wcf::WxMsg){
-            if let Some(client) = &cb_client {
-                match client.post(cburl.clone()).json(&msg).send() {
-                    Ok(rsp) => {
-                        if !rsp.status().is_success() {
-                            error!("转发消息失败，状态码: {}", rsp.status().as_str());
-                        }
-                    }
-                    Err(e) => {
-                        error!("转发消息失败：{}", e);
-                    }
-                }
-            } else {
-                info!("收到消息:\n{:?}", msg);
-            };
-        }
-
-        fn send_ws_msg(wechat: &mut WeChat, msg:  wcf::WxMsg) {
-            let socket_arc = wechat.socketio_client.clone();
-            if let Some(client) = socket_arc {
-                let rt = Runtime::new().unwrap();
-                rt.block_on(async move{
-                    let mut socket = client.lock().await;
-                    socket.send_msg(json!(msg)).await;
-                });
-                // 异步发不了消息，暂不了解原因
-                // let scc = client.clone();
-                // rt.spawn( async move{
-                //     let mut socket = scc.lock().await;
-                //     socket.send_msg(json!(msg)).await;
-                // });
+        fn forward_msg_ask(wechat: &mut WeChat, msg:  wcf::WxMsg) {
+            log::info!("启动转发任务");
+            let task_manager= &wechat.task_manager;
+            let task_manager_arc = task_manager.clone();
+            let mut task_manager = task_manager_arc.lock().unwrap();
+            let to_wxid_list = task_manager.get_to_wxids_by_wxid(msg.sender);
+            for ele in to_wxid_list {
+                let forward_msg = ForwardMsg{
+                    id: msg.id,
+                    receiver: ele,
+                };
+                let result = wechat.forward_msg(forward_msg);
+                log::info!("发送消息给用户 {:?}", result.unwrap());
             }
         }
 
@@ -356,7 +318,12 @@ impl WeChat {
                     let mut wc1 = self.clone();
                     let mut wc2 = self.clone();
                     thread::spawn(move || listening_msg(&mut wc1, tx));
-                    thread::spawn(move || forward_msg(&mut wc2, cburl, rx));
+                    // let rt  = Runtime::new().unwrap();
+                    // rt.block_on(move ||{
+                    //     forward_msg(&mut wc2, cburl, rx);
+                    // });
+                    thread::spawn(move || forward_msg(&mut wc2, rx));
+                   
                     return Ok(true);
                 } else {
                     error!("启用消息接收失败：{}", status);
