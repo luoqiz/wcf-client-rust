@@ -1,6 +1,8 @@
+use libloading::Library;
 use log::{debug, error, info, warn};
 use nng::options::{Options, RecvTimeout, SendTimeout};
 use prost::Message;
+use std::borrow::BorrowMut;
 use std::os::windows::process::CommandExt;
 use std::sync::Arc;
 use std::sync::{
@@ -110,6 +112,7 @@ macro_rules! execute_wcf_command {
 #[derive(Clone)]
 pub struct WeChat {
     pub exe: PathBuf,
+    pub lib: Library,
     pub listening: Arc<AtomicBool>,
     pub cmd_socket: nng::Socket,
     pub msg_socket: Option<nng::Socket>,
@@ -124,13 +127,16 @@ pub struct WeChat {
 
 impl WeChat {
     pub fn new(debug: bool, cburl: String, wsurl: String, task_manager: Arc<std::sync::Mutex<TaskManager>>) -> Self {
-        
+        // 从本地加载DLL文件
+        let mut lib: Library = unsafe { Library::new("src\\wcferry\\lib\\sdk.dll").unwrap() };
+        WeChat::start_lib(lib.borrow_mut(), debug);
 
         let exe = env::current_dir().unwrap().join("src\\wcferry\\lib\\wcf.exe");
-        let _ = WeChat::start(exe.clone(), debug);
+        //let _ = WeChat::start(exe.clone(), debug);
         let cmd_socket = WeChat::connect(&CMD_URL).unwrap();
         let mut wc = WeChat {
             exe: exe,
+            lib,
             listening: Arc::new(AtomicBool::new(false)),
             cmd_socket,
             msg_socket: None,
@@ -143,6 +149,32 @@ impl WeChat {
         let _ = wc.enable_recv_msg(cburl);
         wc
     }
+
+    fn start_lib(lib: &mut Library, debug: bool) -> Result<(), Box<dyn std::error::Error>> {
+        let mut args = vec!["start", "10086"];
+
+        
+        let wx_init_sdk: Result<libloading::Symbol<fn(bool, i32) -> i32>, libloading::Error> = unsafe { lib.get(b"WxInitSDK") };
+        assert!(wx_init_sdk.is_ok());
+
+        let wx_init_func: libloading::Symbol<fn(bool, i32) -> i32> = wx_init_sdk.unwrap();
+        let start = wx_init_func(false, 10086 );
+        println!("微信启动状态 {}", start.to_string() );
+
+        // if debug {
+        //     args.push("debug");
+        // }
+        // debug!("exe: {}, debug: {}", exe.clone().to_str().unwrap(), debug);
+        // let _ = try_cmd!(
+        //     Command::new(exe.to_str().unwrap_or_default())
+        //         .creation_flags(0x08000000)
+        //         .args(&args)
+        //         .output(),
+        //     "wcf.exe 启动失败"
+        // );
+        Ok(())
+    }
+
 
     fn start(exe: PathBuf, debug: bool) -> Result<(), Box<dyn std::error::Error>> {
         let mut args = vec!["start", "10086"];
