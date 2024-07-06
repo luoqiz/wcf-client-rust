@@ -1,19 +1,17 @@
+use libloading::{Library, Symbol};
 use log::{debug, error, info, warn};
 use nng::options::{Options, RecvTimeout, SendTimeout};
 use prost::Message;
-use std::os::windows::process::CommandExt;
-use std::sync::Arc;
+use reqwest::blocking::Client;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     mpsc::{self, Receiver, SyncSender},
+    Arc,
 };
 use std::{
     env,
-    path::PathBuf,
-    process::Command,
     thread::{self, sleep},
     time::Duration,
-    vec,
 };
 
 const CMD_URL: &'static str = "tcp://127.0.0.1:10086";
@@ -107,30 +105,41 @@ macro_rules! execute_wcf_command {
     }};
 }
 
-#[derive(Clone)]
+#[derive(Debug)]
 pub struct WeChat {
-    pub exe: PathBuf,
+    pub dll: Arc<Library>,
     pub listening: Arc<AtomicBool>,
     pub cmd_socket: nng::Socket,
     pub msg_socket: Option<nng::Socket>,
     pub task_manager: Arc<std::sync::Mutex<TaskManager>>,
 }
 
+impl Clone for WeChat {
+    fn clone(&self) -> Self {
+        WeChat {
+            dll: Arc::clone(&self.dll),
+            listening: Arc::clone(&self.listening),
+            cmd_socket: self.cmd_socket.clone(),
+            msg_socket: self.msg_socket.clone(),
+            task_manager: self.task_manager.clone(),
+        }
+    }
+}
+
 // impl Default for WeChat {
 //     fn default() -> Self {
-//         WeChat::new(false, "".to_string(),"".to_string())
+//         WeChat::new(false, "".to_string(),"")
 //     }
 // }
 
 impl WeChat {
     pub fn new(debug: bool, cburl: String, wsurl: String, task_manager: Arc<std::sync::Mutex<TaskManager>>) -> Self {
-        
-
-        let exe = env::current_dir().unwrap().join("src\\wcferry\\lib\\wcf.exe");
-        let _ = WeChat::start(exe.clone(), debug);
+        let dll_path = env::current_dir().unwrap().join("src\\wcferry\\lib\\sdk.dll");
+        let dll = unsafe { Library::new(dll_path).unwrap() };
+        let _ = WeChat::start(&dll, debug);
         let cmd_socket = WeChat::connect(&CMD_URL).unwrap();
         let mut wc = WeChat {
-            exe: exe,
+            dll: Arc::new(dll),
             listening: Arc::new(AtomicBool::new(false)),
             cmd_socket,
             msg_socket: None,
@@ -144,19 +153,15 @@ impl WeChat {
         wc
     }
 
-    fn start(exe: PathBuf, debug: bool) -> Result<(), Box<dyn std::error::Error>> {
-        let mut args = vec!["start", "10086"];
-        if debug {
-            args.push("debug");
+    fn start(dll: &Library, debug: bool) -> Result<(), Box<dyn std::error::Error>> {
+        type WxInitSDK = unsafe extern "C" fn(bool, i32) -> i32;
+        let wx_init_sdk: Symbol<WxInitSDK> = unsafe { dll.get(b"WxInitSDK")? };
+
+        let port = 10086;
+        let result = unsafe { wx_init_sdk(debug, port) };
+        if result != 0 {
+            return Err("WxInitSDK 启动失败".into());
         }
-        debug!("exe: {}, debug: {}", exe.clone().to_str().unwrap(), debug);
-        let _ = try_cmd!(
-            Command::new(exe.to_str().unwrap_or_default())
-                .creation_flags(0x08000000)
-                .args(&args)
-                .output(),
-            "wcf.exe 启动失败"
-        );
         Ok(())
     }
 
@@ -180,14 +185,14 @@ impl WeChat {
             self.listening.store(false, Ordering::Relaxed);
         }
         self.cmd_socket.close();
-        try_cmd!(
-            Command::new(self.exe.to_str().unwrap())
-                .creation_flags(0x08000000)
-                .args(["stop"])
-                .output(),
-            "服务停止失败"
-        );
-               
+
+        type WxDestroySDK = unsafe extern "C" fn() -> i32;
+        let wx_destroy_sdk: Symbol<WxDestroySDK> = unsafe { self.dll.get(b"WxDestroySDK")? };
+
+        let result = unsafe { wx_destroy_sdk() };
+        if result != 0 {
+            return Err("WxDestroySDK 停止失败".into());
+        }
         debug!("服务已停止: {}", CMD_URL);
         Ok(())
     }
@@ -293,7 +298,7 @@ impl WeChat {
             let to_wxid_list = task_manager.get_to_wxids_by_wxid(msg.sender);
             for ele in to_wxid_list {
                 let forward_msg = ForwardMsg{
-                    id: msg.id,
+                    id: msg.id.clone(),
                     receiver: ele,
                 };
                 let result = wechat.forward_msg(forward_msg);
@@ -318,12 +323,7 @@ impl WeChat {
                     let mut wc1 = self.clone();
                     let mut wc2 = self.clone();
                     thread::spawn(move || listening_msg(&mut wc1, tx));
-                    // let rt  = Runtime::new().unwrap();
-                    // rt.block_on(move ||{
-                    //     forward_msg(&mut wc2, cburl, rx);
-                    // });
                     thread::spawn(move || forward_msg(&mut wc2, rx));
-                   
                     return Ok(true);
                 } else {
                     error!("启用消息接收失败：{}", status);

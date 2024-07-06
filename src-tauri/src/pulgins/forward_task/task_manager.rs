@@ -13,6 +13,7 @@ pub struct WxidMapping {
     to_wxid_list: Vec<String>,
 }
 
+#[derive(Debug)]
 pub struct TaskManager {
     // pub root_dir: String,
     pub wxid: String,
