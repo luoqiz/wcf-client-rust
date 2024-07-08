@@ -1,6 +1,6 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt;
-use serde::{Serialize, Deserialize};
 
 use crate::pulgins::forward_task::task_file::Task;
 
@@ -34,15 +34,15 @@ impl TaskManager {
                     tasks: tasks,
                     mappings: mappings,
                 }
-            },
+            }
             None => {
-                TaskManager{
+                TaskManager {
                     // root_dir,
                     wxid: "".to_string(),
-                    tasks: vec!(),
+                    tasks: vec![],
                     mappings: HashMap::new(),
                 }
-            },
+            }
         }
     }
 
@@ -90,7 +90,12 @@ impl TaskManager {
         }
     }
 
-    pub fn add_or_remove_task(&mut self, wxid: &str, task: Option<Task>, remove_id: Option<String>) {
+    pub fn add_or_remove_task(
+        &mut self,
+        wxid: &str,
+        task: Option<Task>,
+        remove_id: Option<String>,
+    ) {
         if let Some(task) = task {
             // 定义文件路径
             // let file_path = ".\\".to_string() + wxid + "\\task\\"+ &task.id +".json";
@@ -104,10 +109,10 @@ impl TaskManager {
     }
 
     pub fn get_to_wxids_by_wxid(&mut self, wxid: String) -> Vec<String> {
-        let mapping =  self.mappings.get(&wxid);
+        let mapping = self.mappings.get(&wxid);
         if let Some(maps) = mapping {
             maps.to_wxid_list.clone()
-        }else{
+        } else {
             vec![]
         }
     }

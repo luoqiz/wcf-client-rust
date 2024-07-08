@@ -4,12 +4,14 @@
 use std::sync::{Arc, Mutex};
 
 use chrono::Local;
-use entity::KCoinfig;
-use global::initialize_global;
 use log::{info, Level, LevelFilter, Log, Metadata, Record};
 use tauri::{App, AppHandle, command, Manager, Window, WindowEvent};
-use tauri::{menu::{MenuBuilder, MenuItemBuilder}, tray::{ClickType, TrayIconBuilder}};
+use tauri::{
+    menu::{MenuBuilder, MenuItemBuilder},
+    tray::{TrayIconBuilder, TrayIconEvent},
+};
 use tauri::image::Image;
+use tauri::tray::{MouseButton, MouseButtonState};
 use winapi::{
     shared::winerror::ERROR_ALREADY_EXISTS,
     um::{
@@ -19,16 +21,18 @@ use winapi::{
     },
 };
 
+use entity::KCoinfig;
+use global::initialize_global;
 use http_server::HttpServer;
 
 mod endpoints;
-mod http_server;
-mod wcferry;
-mod tauri_commands;
-mod pulgins;
 mod entity;
 mod events;
 mod global;
+mod http_server;
+mod pulgins;
+mod tauri_commands;
+mod wcferry;
 
 struct FrontendLogger {
     app_handle: tauri::AppHandle,
@@ -77,7 +81,7 @@ async fn start_server(
         .map_err(|_| "Invalid host address".to_string())?;
     {
         let mut app_state = state.inner().lock().unwrap();
-        let _ = app_state.http_server.start(host_bytes, port, cburl,wsurl);
+        let _ = app_state.http_server.start(host_bytes, port, cburl, wsurl);
     }
 
     info!("服务启动，监听 http://{}:{}", host, port);
@@ -117,7 +121,6 @@ fn handle_system_tray_event(window: &Window, event: &WindowEvent) {
     }
 }
 
-
 // 初始化日志功能
 fn init_log(handle: AppHandle) {
     log::set_boxed_logger(Box::new(FrontendLogger { app_handle: handle }))
@@ -139,8 +142,15 @@ fn init_menu(app: &mut App) {
             _ => (),
         })
         .on_tray_icon_event(|tray, event| {
-            if event.click_type == ClickType::Double {
-                let app = tray.app_handle();
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                id: _,
+                position: _,
+                rect: _,
+            } = event
+            {
+                let app: &AppHandle = tray.app_handle();
                 if let Some(webview_window) = app.get_webview_window("main") {
                     if webview_window.is_visible().unwrap() {
                         let _ = webview_window.hide();
@@ -154,9 +164,9 @@ fn init_menu(app: &mut App) {
         .build(app);
 }
 
-  fn main() {
-
+fn main() {
     let app1 = tauri::Builder::default()
+        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             // init_window(app.get_webview_window("main").unwrap());
@@ -171,7 +181,9 @@ fn init_menu(app: &mut App) {
             // config: KCoinfig::read(),
         })))
         .invoke_handler(tauri::generate_handler![
-            start_server, stop_server, confirm_exit,
+            start_server,
+            stop_server,
+            confirm_exit,
             tauri_commands::get_contacts,
             tauri_commands::get_user_info,
             tauri_commands::write_wxid_task,
@@ -183,4 +195,3 @@ fn init_menu(app: &mut App) {
     app1.run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
-

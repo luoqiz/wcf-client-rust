@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::Path;
@@ -16,8 +16,8 @@ pub struct Task {
 // 将结构体写入 JSON 文件的函数
 pub fn write_to_json_file(wxid: &str, task: &Task) -> std::io::Result<()> {
     // 定义文件路径
-    let file_path = ".\\".to_string() + wxid + "\\task\\"+ &task.id +".json";
-    
+    let file_path = ".\\".to_string() + wxid + "\\task\\" + &task.id + ".json";
+
     // 创建嵌套目录
     if let Some(parent) = Path::new(&file_path.clone()).parent() {
         fs::create_dir_all(parent)?;
@@ -31,18 +31,18 @@ pub fn write_to_json_file(wxid: &str, task: &Task) -> std::io::Result<()> {
 
     // 获取文件的绝对路径并返回
     let absolute_path = fs::canonicalize(file_path.clone())?;
-    log::info!("任务创建路径: {:?}",absolute_path);
+    log::info!("任务创建路径: {:?}", absolute_path);
 
     // 将 JSON 字符串写入文件
     file.write_all(json_string.as_bytes())?;
-    
+
     Ok(())
 }
 
 // 从 JSON 文件读取数据并反序列化为结构体的函数
 pub fn read_from_json_file(wxid: &str) -> Vec<Task> {
     // 当前目录
-    let directory_path = ".\\".to_string() + wxid + "\\task"; 
+    let directory_path = ".\\".to_string() + wxid + "\\task";
 
     let mut result = Vec::new();
 
@@ -53,7 +53,11 @@ pub fn read_from_json_file(wxid: &str) -> Vec<Task> {
                 let path = entry.path();
                 if let Some(extension) = path.extension() {
                     if extension == "json" {
-                        if let Some(file_name) = path.file_name().and_then(|os_str| os_str.to_str()).map(String::from) {
+                        if let Some(file_name) = path
+                            .file_name()
+                            .and_then(|os_str| os_str.to_str())
+                            .map(String::from)
+                        {
                             if let Ok(file_content) = fs::read_to_string(&path) {
                                 // 将文件内容解析为 Person 结构体
                                 if let Ok(task) = serde_json::from_str::<Task>(&file_content) {

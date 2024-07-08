@@ -11,7 +11,6 @@ pub struct WsMessageHandler {
 
 #[async_trait]
 impl EventHandler for WsMessageHandler {
-
     async fn handle(&self, event: Event) {
         if let Event::ClientMessage(ref msg) = event {
             log::debug!("ws处理器 {} -- 接收到信息", self.id);

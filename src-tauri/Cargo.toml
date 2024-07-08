@@ -34,6 +34,7 @@ async-trait = "0.1.80"
 rand = "0.8.5"
 ureq = { version = "2.9.7", features = ["json"] }
 libloading = "0.8"
+tauri-plugin-clipboard-manager = "2.1.0-beta.5"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem

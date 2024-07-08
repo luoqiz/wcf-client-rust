@@ -12,15 +12,13 @@ pub struct HttpMessageHandler {
 
 #[async_trait]
 impl EventHandler for HttpMessageHandler {
-
     async fn handle(&self, event: Event) {
         if let Event::ClientMessage(ref msg) = event {
-
             let global = GLOBAL.get().unwrap();
             let k_config = global.config.clone();
             let cburl = k_config.cburl.clone();
             if cburl.is_empty() {
-                return ;
+                return;
             }
 
             log::debug!("http服务 {} 回调地址为: {:?}", self.id, cburl.clone());
@@ -36,7 +34,6 @@ impl EventHandler for HttpMessageHandler {
                     log::error!("转发消息失败：{}", e);
                 }
             }
-           
         }
     }
 }

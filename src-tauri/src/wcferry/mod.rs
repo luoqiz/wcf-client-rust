@@ -133,8 +133,15 @@ impl Clone for WeChat {
 // }
 
 impl WeChat {
-    pub fn new(debug: bool, cburl: String, wsurl: String, task_manager: Arc<std::sync::Mutex<TaskManager>>) -> Self {
-        let dll_path = env::current_dir().unwrap().join("src\\wcferry\\lib\\sdk.dll");
+    pub fn new(
+        debug: bool,
+        cburl: String,
+        wsurl: String,
+        task_manager: Arc<std::sync::Mutex<TaskManager>>,
+    ) -> Self {
+        let dll_path = env::current_dir()
+            .unwrap()
+            .join("src\\wcferry\\lib\\sdk.dll");
         let dll = unsafe { Library::new(dll_path).unwrap() };
         let _ = WeChat::start(&dll, debug);
         let cmd_socket = WeChat::connect(&CMD_URL).unwrap();
@@ -229,7 +236,13 @@ impl WeChat {
     }
 
     pub fn get_tables(&self, db: String) -> Result<wcf::DbTables, Box<dyn std::error::Error>> {
-        execute_wcf_command!(self, Functions::FuncGetDbTables, ReqMsg::Str(db), Tables, "获取数据表")
+        execute_wcf_command!(
+            self,
+            Functions::FuncGetDbTables,
+            ReqMsg::Str(db),
+            Tables,
+            "获取数据表"
+        )
     }
 
     pub fn enable_recv_msg(&mut self, cburl: String) -> Result<bool, Box<dyn std::error::Error>> {
@@ -276,8 +289,8 @@ impl WeChat {
                 match rx.recv() {
                     Ok(msg) => {
                         // 任务转发
-                        forward_msg_ask(wechat,msg.clone());
-                        
+                        forward_msg_ask(wechat, msg.clone());
+
                         // 发送到消息监听器中
                         let global = GLOBAL.get().unwrap();
                         let event_bus = global.event_bus.lock().unwrap();
@@ -290,14 +303,14 @@ impl WeChat {
             }
         }
 
-        fn forward_msg_ask(wechat: &mut WeChat, msg:  wcf::WxMsg) {
+        fn forward_msg_ask(wechat: &mut WeChat, msg: wcf::WxMsg) {
             log::info!("启动转发任务");
-            let task_manager= &wechat.task_manager;
+            let task_manager = &wechat.task_manager;
             let task_manager_arc = task_manager.clone();
             let mut task_manager = task_manager_arc.lock().unwrap();
             let to_wxid_list = task_manager.get_to_wxids_by_wxid(msg.sender);
             for ele in to_wxid_list {
-                let forward_msg = ForwardMsg{
+                let forward_msg = ForwardMsg {
                     id: msg.id.clone(),
                     receiver: ele,
                 };
@@ -390,11 +403,23 @@ impl WeChat {
     }
 
     pub fn save_audio(&self, am: wcf::AudioMsg) -> Result<String, Box<dyn std::error::Error>> {
-        execute_wcf_command!(self, Functions::FuncGetAudioMsg, ReqMsg::Am(am), Str, "保存语音")
+        execute_wcf_command!(
+            self,
+            Functions::FuncGetAudioMsg,
+            ReqMsg::Am(am),
+            Str,
+            "保存语音"
+        )
     }
 
     pub fn decrypt_image(&self, msg: wcf::DecPath) -> Result<String, Box<dyn std::error::Error>> {
-        execute_wcf_command!(self, Functions::FuncDecryptImage, ReqMsg::Dec(msg), Str, "解密图片")
+        execute_wcf_command!(
+            self,
+            Functions::FuncDecryptImage,
+            ReqMsg::Dec(msg),
+            Str,
+            "解密图片"
+        )
     }
 
     pub fn download_attach(&self, msg: wcf::AttachMsg) -> Result<bool, Box<dyn std::error::Error>> {
@@ -406,22 +431,40 @@ impl WeChat {
     }
 
     pub fn query_sql(&self, msg: wcf::DbQuery) -> Result<wcf::DbRows, Box<dyn std::error::Error>> {
-        execute_wcf_command!(self, Functions::FuncExecDbQuery, ReqMsg::Query(msg), Rows, "查询 SQL ")
+        execute_wcf_command!(
+            self,
+            Functions::FuncExecDbQuery,
+            ReqMsg::Query(msg),
+            Rows,
+            "查询 SQL "
+        )
     }
 
-    pub fn accept_new_friend(&self, msg: wcf::Verification) -> Result<bool, Box<dyn std::error::Error>> {
+    pub fn accept_new_friend(
+        &self,
+        msg: wcf::Verification,
+    ) -> Result<bool, Box<dyn std::error::Error>> {
         execute_wcf_command!(self, Functions::FuncAcceptFriend, ReqMsg::V(msg), Status 1, "通过好友申请")
     }
 
-    pub fn add_chatroom_member(&self, msg: wcf::MemberMgmt) -> Result<bool, Box<dyn std::error::Error>> {
+    pub fn add_chatroom_member(
+        &self,
+        msg: wcf::MemberMgmt,
+    ) -> Result<bool, Box<dyn std::error::Error>> {
         execute_wcf_command!(self, Functions::FuncAddRoomMembers, ReqMsg::M(msg), Status 1, "添加群成员")
     }
 
-    pub fn invite_chatroom_member(&self, msg: wcf::MemberMgmt) -> Result<bool, Box<dyn std::error::Error>> {
+    pub fn invite_chatroom_member(
+        &self,
+        msg: wcf::MemberMgmt,
+    ) -> Result<bool, Box<dyn std::error::Error>> {
         execute_wcf_command!(self, Functions::FuncInvRoomMembers, ReqMsg::M(msg), Status 1, "邀请群成员")
     }
 
-    pub fn delete_chatroom_member(&self, msg: wcf::MemberMgmt) -> Result<bool, Box<dyn std::error::Error>> {
+    pub fn delete_chatroom_member(
+        &self,
+        msg: wcf::MemberMgmt,
+    ) -> Result<bool, Box<dyn std::error::Error>> {
         execute_wcf_command!(self, Functions::FuncDelRoomMembers, ReqMsg::M(msg), Status 1, "删除群成员")
     }
 

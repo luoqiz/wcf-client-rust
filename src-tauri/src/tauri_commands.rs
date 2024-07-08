@@ -1,13 +1,13 @@
+use crate::entity::KCoinfig;
+use crate::{pulgins::forward_task::task_file::Task, wcferry::WeChat, AppState};
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::sync::{Arc, Mutex};
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
 use tauri::command;
-use crate::entity::KCoinfig;
-use crate::{pulgins::forward_task::task_file::Task, wcferry::WeChat, AppState};
 
-#[derive(Serialize, Deserialize, Clone, PartialEq,)]
+#[derive(Serialize, Deserialize, Clone, PartialEq)]
 pub struct ApiResponse<T>
 where
     T: Serialize,
@@ -77,17 +77,24 @@ pub async fn get_user_info(state: tauri::State<'_, Arc<Mutex<AppState>>>) -> Res
 }
 
 #[command]
-pub fn write_wxid_task(state: tauri::State<'_, Arc<Mutex<AppState>>>, wxid: &str, task: Task)->Result<String,String>{
+pub fn write_wxid_task(
+    state: tauri::State<'_, Arc<Mutex<AppState>>>,
+    wxid: &str,
+    task: Task,
+) -> Result<String, String> {
     let app_state = state.inner().lock().unwrap();
     let task_manager_lock = &app_state.http_server.task_manager.clone();
     let mut task_manager = task_manager_lock.lock().unwrap();
-    let _ = task_manager.add_or_remove_task(wxid, Some(task),None);
+    let _ = task_manager.add_or_remove_task(wxid, Some(task), None);
     Ok("ok".to_string())
 }
 
 #[command]
-pub fn read_wxid_task(state: tauri::State<'_, Arc<Mutex<AppState>>>, wxid: &str) -> Result<Vec<Task>, String>{
-    log::info!("{:?}",wxid);
+pub fn read_wxid_task(
+    state: tauri::State<'_, Arc<Mutex<AppState>>>,
+    wxid: &str,
+) -> Result<Vec<Task>, String> {
+    log::info!("{:?}", wxid);
     let app_state = state.inner().lock().unwrap();
     let task_manager_lock = &app_state.http_server.task_manager.clone();
     let task_manager = task_manager_lock.lock().unwrap();
@@ -97,36 +104,38 @@ pub fn read_wxid_task(state: tauri::State<'_, Arc<Mutex<AppState>>>, wxid: &str)
 }
 
 #[command]
-pub fn save_config(state: tauri::State<'_, Arc<Mutex<AppState>>>, config: KCoinfig) -> Result<bool, String>{
-    
+pub fn save_config(
+    state: tauri::State<'_, Arc<Mutex<AppState>>>,
+    config: KCoinfig,
+) -> Result<bool, String> {
     // 获取应用安装目录的路径
     // let install_dir = resolve_path(&app, ".", None).map_err(|e| e.to_string())?;
     // 定义文件路径
     let file_path = ".\\config.json";
     // let file_path = "e:\\wcf-client-rust\\config.json5";
     // log::info!("----file_path-----{:?}",file_path);
-    
+
     // 生成完整的文件路径
     // let file_path = file_path.join("config.json5");
 
     // 尝试创建并写入文件
     let mut file = File::create(&file_path).map_err(|e| e.to_string())?;
     let json_str = serde_json::to_string(&config).unwrap();
-    file.write_all(json_str.as_bytes()).map_err(|e| e.to_string())?;
+    file.write_all(json_str.as_bytes())
+        .map_err(|e| e.to_string())?;
 
     Ok(true)
 }
 
 #[command]
-pub fn read_config(state: tauri::State<'_, Arc<Mutex<AppState>>>) -> Result<KCoinfig, String>{
-    
+pub fn read_config(state: tauri::State<'_, Arc<Mutex<AppState>>>) -> Result<KCoinfig, String> {
     // 获取应用安装目录的路径
     // let install_dir = resolve_path(&app, ".", None).map_err(|e| e.to_string())?;
     // 定义文件路径
     let file_path = ".\\config.json";
-     
+
     // 尝试创建并写入文件
-    let file_str =  fs::read_to_string(&file_path).unwrap();
+    let file_str = fs::read_to_string(&file_path).unwrap();
 
     let kconfig: KCoinfig = serde_json::from_str(&file_str).unwrap();
     Ok(kconfig)

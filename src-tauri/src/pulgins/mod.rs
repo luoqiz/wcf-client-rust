@@ -13,10 +13,9 @@ pub mod forward_task;
 //         let task_manager = TaskManager::new(Some(wxid.clone()));
 //         Self { wxid, task_manager }
 //     }
-    
+
 //     fn apply_plugin(msg:String){
 
 //     }
 
-     
 // }

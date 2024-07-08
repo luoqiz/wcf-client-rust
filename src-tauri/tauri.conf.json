@@ -8,6 +8,7 @@
     "beforeBuildCommand": "pnpm build",
     "frontendDist": "../dist"
   },
+
   "app": {
     "windows": [
       {
