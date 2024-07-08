@@ -33,10 +33,10 @@ export const useServiceStore = defineStore("service", () => {
   );
 
   // 关闭服务
-  const stopService = async () => {
+  const stopService = useDebounceFn(async () => {
     await invoke("stop_server");
     isRunning.value = false;
-  };
+  });
   // 确认退出的弹窗
   async function confirmExit() {
     const shouldExit = await confirm("退出将无法使用服务，确定要退出吗？");
