@@ -12,15 +12,13 @@ async function startSerialEventListener() {
     });
 }
 
-onMounted(()=>{
+onMounted(() => {
     startSerialEventListener();
 })
 </script>
 
 <template>
-    <div class="w-full h-full">
-        <Textarea v-model="logStore.logMsg" rows="20" cols="72" readonly disabled />
-    </div>
+    <Textarea v-model="logStore.logMsg" rows="20" cols="72" readonly disabled class="w-full h-full" />
 </template>
 
 <style scoped></style>

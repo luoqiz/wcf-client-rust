@@ -5,7 +5,7 @@ import { useConfigStore } from './stores/config';
 
 let configStore = useConfigStore();
 
-onMounted(async ()=>{
+onMounted(async () => {
    await configStore.read();
 })
 
@@ -15,4 +15,10 @@ onMounted(async ()=>{
    <Layout></Layout>
 </template>
 
-<style scoped></style>
+<style scoped>
+html,
+body {
+   margin: 0;
+   height: 100%;
+}
+</style>

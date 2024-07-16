@@ -10,16 +10,13 @@ declare module 'vue' {
     Avatar: typeof import('primevue/avatar')['default']
     Badge: typeof import('primevue/badge')['default']
     Button: typeof import('primevue/button')['default']
-    Card: typeof import('primevue/card')['default']
     Column: typeof import('primevue/column')['default']
     DataTable: typeof import('primevue/datatable')['default']
-    Listbox: typeof import('primevue/listbox')['default']
     Logger: typeof import('./src/components/logger.vue')['default']
     Menu: typeof import('primevue/menu')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     ScrollPanel: typeof import('primevue/scrollpanel')['default']
-    SelectButton: typeof import('primevue/selectbutton')['default']
     Service: typeof import('./src/components/service.vue')['default']
   }
 }
