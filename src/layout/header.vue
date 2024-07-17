@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Service from '../components/service.vue';
+import { IconGithub } from '@arco-design/web-vue/es/icon';
 
 </script>
 <template>
@@ -19,7 +20,10 @@ import Service from '../components/service.vue';
       <Service />
     </div>
     <div>
-      <a-link href="https://github.com/luoqiz/wcf-client-rust" status="success" target="_blank">github地址</a-link>
+      <a-link href="https://github.com/luoqiz/wcf-client-rust" status="success" target="_blank">
+        <icon-github :style="{ fontSize: '32px' }" />
+      </a-link>
+
     </div>
   </div>
 </template>

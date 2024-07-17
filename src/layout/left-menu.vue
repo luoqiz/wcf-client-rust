@@ -7,11 +7,17 @@ const items = ref([
   {
     separator: true
   },
+  // {
+  //   label: '查看',
+  //   items: [
+
+  //   ]
+  // },
   {
-    label: '查看',
+    //label: '功能',
     items: [
       {
-        label: '主页',
+        label: '日志',
         icon: 'pi pi-home',
         command: () => { handle_menu_click("/") },
       },
@@ -20,28 +26,24 @@ const items = ref([
         icon: 'pi pi-users',
         command: () => { handle_menu_click("/contact") },
       },
-    ]
-  },
-  {
-    label: '功能',
-    items: [
       {
         label: '配置',
         icon: 'pi pi-cog',
         command: () => { handle_menu_click("/config") }
       },
-      {
-        label: '任务',
-        icon: 'pi pi-receipt',
-        url: "/task",
-        command: () => { handle_menu_click("/task") }
-      },
+      // {
+      //   label: '任务',
+      //   icon: 'pi pi-receipt',
+      //   url: "/task",
+      //   command: () => { handle_menu_click("/task") }
+      // },
       {
         label: '消息',
         icon: 'pi pi-inbox',
         badge: 0,
-        url: "/task",
+        command: () => { handle_menu_click("/msg") }
       },
+
       // {
       //     label: 'Logout',
       //     icon: 'pi pi-sign-out',
@@ -77,8 +79,9 @@ const handle_menu_click = (url: string) => {
               <span :class="item.icon" />
               <span class="ml-2">{{ item.label }}</span>
               <Badge v-if="item.badge" class="ml-auto" :value="item.badge" />
-              <span v-if="item.shortcut" class="ml-auto border-1 surface-border border-round surface-100 text-xs p-1">{{
-                item.shortcut }}</span>
+              <span v-if="item.shortcut" class="ml-auto border-1 surface-border border-round surface-100 text-xs p-1">
+                {{ item.shortcut }}
+              </span>
             </a>
           </div>
         </template>
