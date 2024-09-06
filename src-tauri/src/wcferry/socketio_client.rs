@@ -40,12 +40,14 @@ impl SocketClient {
             Payload::Binary(bin_data) => println!("Received bytes: {:#?}", bin_data),
             Payload::Text(res) => {
                 log::info!("---- {:?}", res);
-                let rich_msg_vec: Result<Vec<wcf::RichText>, serde_json::Error> = res
+                let json = res[0].as_array().unwrap();
+                let rich_msg_vec: Result<Vec<wcf::RichText>, serde_json::Error> = json
                     .into_iter()
-                    .map(|value| serde_json::from_value(value))
+                    .map(|value| {
+                      return serde_json::from_value(value.clone());
+                    })
                     .collect();
                 let global = GLOBAL.get().unwrap();
-
                 for rich_text in rich_msg_vec.unwrap() {
                     let wechat_arc = global.wechat.clone();
                     let wechat1 = wechat_arc.lock().unwrap();
@@ -58,6 +60,7 @@ impl SocketClient {
             _ => (),
         };
 
+        
         // 发起连接
         let socket = ClientBuilder::new(self.url.clone())
             .namespace("/")
