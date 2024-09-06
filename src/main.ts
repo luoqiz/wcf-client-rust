@@ -3,25 +3,25 @@ import "./assets/main.css";
 import App from "./App.vue";
 import PrimeVue from "primevue/config";
 import "virtual:uno.css";
-import { createRouter, createWebHistory } from "vue-router/auto";
-
-//in main.js
-import "primevue/resources/themes/lara-light-green/theme.css";
-// import 'primevue/resources/themes/saga-blue/theme.css';
-import "primevue/resources/primevue.min.css";
 import "primeicons/primeicons.css";
 
 import ArcoVue from "@arco-design/web-vue";
 import "@arco-design/web-vue/dist/arco.css";
 import ToastService from "primevue/toastservice";
-
+import Aura from "@primevue/themes/aura";
 import { createPinia } from "pinia";
+import { createRouter, createWebHistory } from "vue-router";
+import { routes } from "vue-router/auto-routes";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  routes,
 });
 const app = createApp(App);
 app.use(PrimeVue, {
+  theme: {
+    preset: Aura,
+  },
   //   unstyled: true ,
   // ripple: true
 });

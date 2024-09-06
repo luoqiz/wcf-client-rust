@@ -1,42 +1,43 @@
 [package]
 name = "wcf-client-rust"
-version = "0.0.6"
+version = "0.0.7"
 description = "A HTTP (Rust) client for WeChatFerry"
 authors = ["luoqiz"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+name = "wcf_client_rust_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
 [build-dependencies]
-tauri-build = { version = "2.0.0-beta", features = [] }
+tauri-build = { version = "2.0.0-rc", features = [] }
 
 [dependencies]
-tauri = { version = "2.0.0-beta", features = ["tray-icon", "image-png"] }
-tauri-plugin-shell = "2.0.0-beta"
+tauri = { version = "2.0.0-rc", features = ['tray-icon','image-ico','image-png'] }
+tauri-plugin-shell = "2.0.0-rc"
+tauri-plugin-clipboard-manager = "2.0.0-rc"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-log = "0.4"
+log = "0.4.22"
 nng = "1.0.1"
-warp = "0.3.7"
-utoipa = "4"
-utoipa-swagger-ui = "6"
 base64 = "0.22"
 chrono = "0.4"
-prost = "0.12.6"
-env_logger = "0.11.3"
-tokio = { version = "1.37.0", features = ["full"] }
-reqwest = { version = "0.11", features = ["blocking", "json"] }
-winapi = { version = "0.3.9", features = ["winuser", "synchapi"] }
+prost = "0.13.2"
+env_logger = "0.11"
+tokio = { version = "1.40", features = ["full"] }
+reqwest = { version = "0.12", features = ["blocking", "json"] }
+winapi = { version = "0.3", features = ["winuser", "synchapi"] }
 rust_socketio = { version = "^0.6.0" }
 #rust_socketio = { version = "^0.6.0", features = ["async"] }
-futures-util = "0.3.30"
-async-trait = "0.1.80"
-rand = "0.8.5"
-ureq = { version = "2.9.7", features = ["json"] }
+futures-util = "0.3"
+async-trait = "0.1"
+rand = "0.8"
+ureq = { version = "2.10", features = ["json"] }
 libloading = "0.8"
-tauri-plugin-clipboard-manager = "2.1.0-beta.5"
-
-[features]
-# this feature is used for production builds or when `devPath` points to the filesystem
-# DO NOT REMOVE!!
-custom-protocol = ["tauri/custom-protocol"]
+utoipa = "4.2.3"
+utoipa-swagger-ui = "7.1.0"
+# utoipa = "4"
+# utoipa-swagger-ui = "6"
+warp = "0.3.7"
