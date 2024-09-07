@@ -20,6 +20,9 @@ importers:
       '@tauri-apps/plugin-shell':
         specifier: '>=2.0.0-rc.0'
         version: 2.0.0-rc.1
+      ace-builds:
+        specifier: ^1.36.2
+        version: 1.36.2
       nanoid:
         specifier: ^5.0.7
         version: 5.0.7
@@ -29,6 +32,9 @@ importers:
       vue:
         specifier: ^3.3.4
         version: 3.5.1(typescript@5.5.4)
+      vue3-ace-editor:
+        specifier: ^2.2.4
+        version: 2.2.4(ace-builds@1.36.2)(vue@3.5.1(typescript@5.5.4))
     devDependencies:
       '@arco-design/web-vue':
         specifier: ^2.56.1
@@ -926,6 +932,9 @@ packages:
   '@vueuse/shared@11.0.3':
     resolution: {integrity: sha512-0rY2m6HS5t27n/Vp5cTDsKTlNnimCqsbh/fmT2LgE+aaU42EMfXo8+bNX91W9I7DDmxfuACXMmrd7d79JxkqWA==}
 
+  ace-builds@1.36.2:
+    resolution: {integrity: sha512-eqqfbGwx/GKjM/EnFu4QtQ+d2NNBu84MGgxoG8R5iyFpcVeQ4p9YlTL+ZzdEJqhdkASqoqOxCSNNGyB6lvMm+A==}
+
   acorn@8.12.1:
     resolution: {integrity: sha512-tcpGyI9zbizT9JbV6oYE477V6mTlXvvi0T0G3SNIYE2apm/G5huBa1+K89VGeovbg+jycCrfhl3ADxErOuO6Jg==}
     engines: {node: '>=0.4.0'}
@@ -1513,6 +1522,12 @@ packages:
     hasBin: true
     peerDependencies:
       typescript: '>=5.0.0'
+
+  vue3-ace-editor@2.2.4:
+    resolution: {integrity: sha512-FZkEyfpbH068BwjhMyNROxfEI8135Sc+x8ouxkMdCNkuj/Tuw83VP/gStFQqZHqljyX9/VfMTCdTqtOnJZGN8g==}
+    peerDependencies:
+      ace-builds: '*'
+      vue: ^3
 
   vue@3.5.1:
     resolution: {integrity: sha512-k4UNnbPOEskodSxMtv+B9GljdB0C9ubZDOmW6vnXVGIfMqmEsY2+ohasjGguhGkMkrcP/oOrbH0dSD41x5JQFw==}
@@ -2371,6 +2386,8 @@ snapshots:
       - '@vue/composition-api'
       - vue
 
+  ace-builds@1.36.2: {}
+
   acorn@8.12.1: {}
 
   ansi-styles@3.2.1:
@@ -2967,6 +2984,12 @@ snapshots:
       '@vue/language-core': 2.1.6(typescript@5.5.4)
       semver: 7.6.3
       typescript: 5.5.4
+
+  vue3-ace-editor@2.2.4(ace-builds@1.36.2)(vue@3.5.1(typescript@5.5.4)):
+    dependencies:
+      ace-builds: 1.36.2
+      resize-observer-polyfill: 1.5.1
+      vue: 3.5.1(typescript@5.5.4)
 
   vue@3.5.1(typescript@5.5.4):
     dependencies:

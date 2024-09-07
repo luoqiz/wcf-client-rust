@@ -17,9 +17,11 @@
     "@tauri-apps/api": ">=2.0.0-rc.0",
     "@tauri-apps/plugin-clipboard-manager": "2.0.0-rc.1",
     "@tauri-apps/plugin-shell": ">=2.0.0-rc.0",
+    "ace-builds": "^1.36.2",
     "nanoid": "^5.0.7",
     "pinia": "^2.2.2",
-    "vue": "^3.3.4"
+    "vue": "^3.3.4",
+    "vue3-ace-editor": "^2.2.4"
   },
   "devDependencies": {
     "@arco-design/web-vue": "^2.56.1",

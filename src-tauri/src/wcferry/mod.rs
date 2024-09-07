@@ -304,7 +304,6 @@ impl WeChat {
         }
 
         fn forward_msg_ask(wechat: &mut WeChat, msg: wcf::WxMsg) {
-            log::info!("启动转发任务");
             let task_manager = &wechat.task_manager;
             let task_manager_arc = task_manager.clone();
             let mut task_manager = task_manager_arc.lock().unwrap();
