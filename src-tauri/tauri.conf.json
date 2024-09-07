@@ -1,6 +1,6 @@
 {
   "productName": "wcf-client-rust",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "identifier": "com.kite.wcf.client",
   "build": {
     "beforeDevCommand": "pnpm dev",
