@@ -37,7 +37,7 @@ rand = "0.8"
 ureq = { version = "2.10", features = ["json"] }
 libloading = "0.8"
 utoipa = "4.2.3"
-utoipa-swagger-ui = "7.1.0"
+utoipa-swagger-ui = "6"
 # utoipa = "4"
 # utoipa-swagger-ui = "6"
 warp = "0.3.7"
