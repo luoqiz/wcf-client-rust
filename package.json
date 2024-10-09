@@ -14,9 +14,9 @@
   },
   "dependencies": {
     "@primevue/themes": "^4.0.5",
-    "@tauri-apps/api": ">=2.0.0-rc.0",
-    "@tauri-apps/plugin-clipboard-manager": "2.0.0-rc.1",
-    "@tauri-apps/plugin-shell": ">=2.0.0-rc.0",
+    "@tauri-apps/api": ">=2.0.0",
+    "@tauri-apps/plugin-clipboard-manager": ">=2.0.0",
+    "@tauri-apps/plugin-shell": ">=2.0.0",
     "ace-builds": "^1.36.2",
     "nanoid": "^5.0.7",
     "pinia": "^2.2.2",
@@ -25,7 +25,7 @@
   },
   "devDependencies": {
     "@arco-design/web-vue": "^2.56.1",
-    "@tauri-apps/cli": ">=2.0.0-rc.0",
+    "@tauri-apps/cli": ">=2.0.0",
     "@types/node": "^22.5.4",
     "@unocss/preset-attributify": "^0.62.3",
     "@unocss/preset-uno": "^0.62.3",
