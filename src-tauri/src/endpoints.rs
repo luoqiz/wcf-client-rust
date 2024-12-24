@@ -1,27 +1,34 @@
-use base64::encode;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::convert::Infallible;
-use std::sync::{Arc, Mutex};
-use std::thread::sleep;
-use std::time::Duration;
-use utoipa::{IntoParams, OpenApi, ToSchema};
-use utoipa_swagger_ui::Config;
-use warp::reply::Json;
-use warp::{
-    http::Uri,
-    hyper::{Response, StatusCode},
-    path::{FullPath, Tail},
-    Filter, Rejection, Reply,
-};
-
 use crate::wcferry::{
     wcf::{
         AttachMsg, AudioMsg, DbNames, DbQuery, DbTable, DbTables, DecPath, ForwardMsg, MemberMgmt,
         MsgTypes, PatMsg, PathMsg, RichText, RpcContact, RpcContacts, TextMsg, Transfer, UserInfo,
         Verification,
     },
-    WeChat,
+    SelfInfo, WeChat,
+};
+use base64::encode;
+use log::{debug, error};
+use reqwest::get;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use std::collections::HashMap;
+use std::convert::Infallible;
+use std::fs::File;
+use std::io::{copy, Cursor};
+use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
+use std::thread::sleep;
+use std::time::Duration;
+use tokio::fs;
+use utoipa::{IntoParams, OpenApi, ToSchema};
+use utoipa_swagger_ui::Config;
+use uuid::Uuid;
+use warp::reply::Json;
+use warp::{
+    http::Uri,
+    hyper::{Response, StatusCode},
+    path::{FullPath, Tail},
+    Filter, Rejection, Reply,
 };
 
 #[macro_export]
@@ -131,7 +138,7 @@ macro_rules! build_route_fn {
 #[derive(Serialize, ToSchema, Clone)]
 #[aliases(ApiResponseBool = ApiResponse<bool>,
     ApiResponseString = ApiResponse<String>,
-    ApiResponseUserInfo = ApiResponse<UserInfo>,
+    ApiResponseUserInfo = ApiResponse<SelfInfo>,
     ApiResponseContacts = ApiResponse<RpcContacts>,
     ApiResponseDbNames = ApiResponse<DbNames>,
     ApiResponseMsgTypes = ApiResponse<MsgTypes>,
@@ -151,6 +158,12 @@ pub struct Id {
     id: u64,
 }
 
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct RoomId {
+    room_id: String,
+}
+
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct Image {
     /// 消息里的 id
@@ -165,6 +178,15 @@ pub struct Image {
     timeout: u8,
 }
 
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct SaveFile {
+    /// 消息里的 id
+    id: u64,
+    /// 消息里的 extra
+    extra: String,
+    thumb: String,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(untagged)]
 pub enum FieldContent {
@@ -173,6 +195,15 @@ pub enum FieldContent {
     Utf8String(String),
     Base64String(String),
     None,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+pub struct Member {
+    /// 微信ID
+    pub wxid: String,
+    /// 群内昵称
+    pub name: String,
+    pub state: i32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -188,6 +219,11 @@ pub struct NewRow {
     pub fields: Vec<NewField>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RoomMemberQuery {
+    pub sql: String,
+}
+
 pub fn get_routes(
     wechat: Arc<Mutex<WeChat>>,
 ) -> impl Filter<Extract = impl Reply, Error = Rejection> + Clone {
@@ -197,13 +233,13 @@ pub fn get_routes(
     #[openapi(
         info(description = "<a href='https://github.com/lich0821/WeChatFerry'>WeChatFerry</a> 一个玩微信的工具。<table align='left'><tbody><tr><td align='center'><img width='160' alt='碲矿' src='https://s2.loli.net/2023/09/25/fub5VAPSa8srwyM.jpg'><div align='center' width='200'>后台回复 <code>WCF</code> 加群交流</div></td><td align='center'><img width='160' alt='赞赏' src='https://s2.loli.net/2023/09/25/gkh9uWZVOxzNPAX.jpg'><div align='center' width='200'>如果你觉得有用</div></td><td width='20%'></td><td width='20%'></td><td width='20%'></td></tr></tbody></table>"),
         paths(is_login, get_self_wxid, get_user_info, get_contacts, get_dbs, get_tables, get_msg_types, save_audio,
-            refresh_pyq, send_text, send_image, send_file, send_rich_text, send_pat_msg, forward_msg, save_image,
+            refresh_pyq, send_text, send_image, send_file, send_rich_text, send_pat_msg, forward_msg, save_image,save_file,
             recv_transfer, query_sql, accept_new_friend, add_chatroom_member, invite_chatroom_member,
-            delete_chatroom_member, revoke_msg),
+            delete_chatroom_member, revoke_msg, query_room_member),
         components(schemas(
             ApiResponse<bool>, ApiResponse<String>, AttachMsg, AudioMsg, DbNames, DbQuery, DbTable, DbTables,
             DecPath, FieldContent, ForwardMsg, Image, MemberMgmt, MsgTypes, PatMsg, PathMsg, RichText, RpcContact,
-            RpcContacts, TextMsg, Transfer, UserInfo, Verification,
+            RpcContacts, TextMsg, Transfer, UserInfo, Verification, ApiResponse<Member>, Member, SelfInfo
         )),
         tags((name = "WCF", description = "玩微信的接口")),
     )]
@@ -236,6 +272,7 @@ pub fn get_routes(
     build_route_fn!(forwardmsg, POST "forward-msg", forward_msg, JSON, wechat);
     build_route_fn!(saveaudio, POST "audio", save_audio, JSON, wechat);
     build_route_fn!(saveimage, POST "save-image", save_image, JSON, wechat);
+    build_route_fn!(savefile, POST "save-file", save_file, JSON, wechat);
     build_route_fn!(recvtransfer, POST "receive-transfer", recv_transfer, JSON, wechat);
     build_route_fn!(querysql, POST "sql", query_sql, JSON, wechat);
     build_route_fn!(acceptnewfriend, POST "accept-new-friend", accept_new_friend, JSON, wechat);
@@ -243,6 +280,7 @@ pub fn get_routes(
     build_route_fn!(invitechatroommember, POST "invite-chatroom-member", invite_chatroom_member, JSON, wechat);
     build_route_fn!(deletechatroommember, POST "delete-chatroom-member", delete_chatroom_member, JSON, wechat);
     build_route_fn!(revokemsg, POST "revoke-msg", revoke_msg, QUERY Id, wechat);
+    build_route_fn!(queryroommember, GET "query-room-member", query_room_member, QUERY RoomId, wechat);
 
     api_doc
         .or(swagger_ui)
@@ -262,6 +300,7 @@ pub fn get_routes(
         .or(forwardmsg(wechat.clone()))
         .or(saveaudio(wechat.clone()))
         .or(saveimage(wechat.clone()))
+        .or(savefile(wechat.clone()))
         .or(recvtransfer(wechat.clone()))
         .or(querysql(wechat.clone()))
         .or(acceptnewfriend(wechat.clone()))
@@ -269,6 +308,7 @@ pub fn get_routes(
         .or(invitechatroommember(wechat.clone()))
         .or(deletechatroommember(wechat.clone()))
         .or(revokemsg(wechat.clone()))
+        .or(queryroommember(wechat.clone()))
 }
 
 async fn serve_swagger(
@@ -436,7 +476,84 @@ pub async fn send_text(text: TextMsg, wechat: Arc<Mutex<WeChat>>) -> Result<Json
     )
 )]
 pub async fn send_image(image: PathMsg, wechat: Arc<Mutex<WeChat>>) -> Result<Json, Infallible> {
-    wechat_api_handler!(wechat, WeChat::send_image, image, "发送图片消息")
+    // 记录图片内容
+    debug!("收到图片消息:\n{:?}", image);
+
+    let mut image_path = PathBuf::from(image.path.clone());
+
+    // 检查是否是网络路径
+    if image.path.starts_with("http") {
+        // 下载图片
+        debug!("开始下载图片\n");
+        let response = match get(&image.path).await {
+            Ok(res) => res,
+            Err(e) => {
+                debug!("下载图片失败: {:?}", e);
+                return Ok(warp::reply::json(&json!({"error": "下载图片失败"})));
+            }
+        };
+        // 确认状态码
+        debug!("响应状态码: {:?}", response.status());
+        if response.status().is_success() {
+            debug!("下载图片成功\n");
+            let content_type = response
+                .headers()
+                .get("content-type")
+                .and_then(|val| val.to_str().ok())
+                .unwrap_or("image/png");
+            let extension = match content_type {
+                "image/jpeg" => "jpg",
+                "image/png" => "png",
+                _ => "png", // 默认使用png
+            };
+
+            // 使用 UUID 生成唯一的文件名
+            let unique_filename = Uuid::new_v4().to_string();
+            let local_image_path =
+                PathBuf::from(format!("C:\\images\\{}.{}", unique_filename, extension));
+
+            // 确保目录存在
+            if let Err(e) = fs::create_dir_all(local_image_path.parent().unwrap()).await {
+                debug!("创建目录失败: {:?}", e);
+                return Ok(warp::reply::json(&json!({"error": "创建目录失败"})));
+            }
+            let mut file = match File::create(&local_image_path) {
+                Ok(f) => f,
+                Err(e) => {
+                    debug!("创建文件失败: {:?}", e);
+                    return Ok(warp::reply::json(&json!({"error": "创建文件失败"})));
+                }
+            };
+            debug!("创建图片文件成功，开始获取图片内容做保存\n");
+            // 获取图片内容并保存到文件
+            let bytes = match response.bytes().await {
+                Ok(b) => b,
+                Err(e) => {
+                    debug!("读取图片内容失败: {:?}", e);
+                    return Ok(warp::reply::json(&json!({"error": "读取图片内容失败"})));
+                }
+            };
+            debug!("读取图片内容成功，开始保存图片内容\n");
+            let mut cursor = Cursor::new(bytes);
+            if let Err(e) = copy(&mut cursor, &mut file) {
+                debug!("保存图片失败: {:?}", e);
+                return Ok(warp::reply::json(&json!({"error": "保存图片失败"})));
+            }
+            debug!("保存图片内容成功, {:?}\n", local_image_path);
+            image_path = PathBuf::from(local_image_path);
+        } else {
+            error!("下载图片失败，状态码: {:?}", response.status());
+            return Ok(warp::reply::json(&json!({"error": "下载图片失败"})));
+        }
+    }
+
+    // 更新 image 的路径
+    let updated_image = PathMsg {
+        path: image_path.to_string_lossy().to_string(),
+        receiver: image.receiver,
+    };
+
+    wechat_api_handler!(wechat, WeChat::send_image, updated_image, "发送图片消息")
 }
 
 /// 发送文件
@@ -569,6 +686,48 @@ pub async fn save_image(msg: Image, wechat: Arc<Mutex<WeChat>>) -> Result<Json, 
         };
     }
     return handle_error("下载超时");
+}
+
+/// 保存图片
+#[utoipa::path(
+    post,
+    tag = "WCF",
+    path = "/save-file",
+    request_body = SaveFile,
+    responses(
+        (status = 200, body = ApiResponseString, description = "保存文件(只下周不解密)")
+    )
+)]
+pub async fn save_file(msg: SaveFile, wechat: Arc<Mutex<WeChat>>) -> Result<Json, Infallible> {
+    let wc = wechat.lock().unwrap();
+    let handle_error = |error_message: &str| -> Result<Json, Infallible> {
+        Ok(warp::reply::json(&ApiResponse::<String> {
+            status: 1,
+            error: Some(error_message.to_string()),
+            data: None,
+        }))
+    };
+
+    let att = AttachMsg {
+        id: msg.id,
+        thumb: msg.thumb.to_string(),
+        extra: msg.extra.clone(),
+    };
+
+    let status = match wc.clone().download_attach(att) {
+        Ok(status) => status,
+        Err(error) => return handle_error(&error.to_string()),
+    };
+
+    if !status {
+        return handle_error("下载失败");
+    }
+
+    return Ok(warp::reply::json(&ApiResponse {
+        status: 0,
+        error: None,
+        data: Some("ok".to_owned()),
+    }));
 }
 
 /// 接收转账
@@ -718,4 +877,51 @@ pub async fn delete_chatroom_member(
 )]
 pub async fn revoke_msg(msg: Id, wechat: Arc<Mutex<WeChat>>) -> Result<Json, Infallible> {
     wechat_api_handler!(wechat, WeChat::revoke_msg, msg.id, "撤回消息")
+}
+
+/// 查询群成员
+#[utoipa::path(
+    get,
+    tag = "WCF",
+    path = "/query-room-member",
+    params(("room_id"=String, Query, description = "群ID")),
+    responses(
+        (status = 200, body = Vec<Member>, description = "查询群成员")
+    )
+)]
+pub async fn query_room_member(
+    room_id: RoomId,
+    wechat: Arc<Mutex<WeChat>>,
+) -> Result<Json, Infallible> {
+    let wechat = wechat.lock().unwrap();
+    let resp = match wechat.clone().query_room_member(room_id.room_id.clone()) {
+        Ok(members) => match members {
+            Some(mbs) => {
+                let mut room_members: Vec<Member> = vec![];
+                for member in mbs.into_iter() {
+                    room_members.push(Member {
+                        wxid: member.wxid,
+                        name: member.name,
+                        state: member.state,
+                    })
+                }
+                ApiResponse {
+                    status: 0,
+                    error: None,
+                    data: Some(room_members),
+                }
+            }
+            None => ApiResponse {
+                status: 0,
+                error: None,
+                data: Some(vec![]),
+            },
+        },
+        Err(e) => ApiResponse {
+            status: 1,
+            error: Some(e.to_string()),
+            data: None,
+        },
+    };
+    Ok(warp::reply::json(&resp))
 }

@@ -1,6 +1,6 @@
 {
   "productName": "wcf-client-rust",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "identifier": "com.kite.wcf.client",
   "build": {
     "beforeDevCommand": "pnpm dev",
@@ -33,7 +33,7 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": ["./src/wcferry/lib", "./icons", "./config.json"],
+    "resources": ["./src/wcferry/lib", "./icons", "./config.json5"],
     "windows": {
       "allowDowngrades": true,
       "certificateThumbprint": null,
