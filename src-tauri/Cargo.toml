@@ -35,11 +35,9 @@ async-trait = "0.1"
 rand = "0.8"
 ureq = { version = "2.10", features = ["json"] }
 libloading = "0.8"
-utoipa = "4.2.3"
+utoipa = "4"
 utoipa-swagger-ui = "6"
-# utoipa = "4"
-# utoipa-swagger-ui = "6"
-# warp = "0.3.7"
+warp = "0.3"
 local-ip-address = "0.6.3"
 regex = "1"
 uuid = { version = "1.2", features = ["v4"] }

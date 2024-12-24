@@ -1,4 +1,4 @@
-// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
+#![recursion_limit = "256"]
 
 use std::sync::{Arc, Mutex};
 use std::fs::{self, File};
@@ -27,7 +27,7 @@ use winapi::{
 };
 // use tauri::{ CustomMenuItem,   SystemTray, SystemTrayMenu};
 
-// mod endpoints;
+mod endpoints;
 mod wcferry;
 mod service;
 mod wechat_config;

@@ -5,7 +5,7 @@ use rand::Rng;
 use crate::{handler::{message::{http_message_handler::HttpMessageHandler, log_message_handler::LogMessageHandler, socketio_message_handler::SocketIOMessageHandler}, msg_event_mgr::MsgEventBus, startup::service_handler::HttpServerHandler, startup_event_mgr::StartUpEventBus},
  wechat_config::WechatConfig};
 
-use super::{socketio_service::SocketIOService, wechat_service::WechatService};
+use super::{http_server_service::HttpServerService, socketio_service::SocketIOService, wechat_service::WechatService};
 
 
 // 全局参数结构
@@ -14,7 +14,7 @@ pub struct GlobalState {
   pub msg_event_bus: Arc<Mutex<MsgEventBus>>,
   pub startup_event_bus: Arc<Mutex<StartUpEventBus>>,
   pub wechat_service: Arc<Mutex<WechatService>>,
-  // pub http_server_service: Arc<Mutex<HttpServerService>>,
+  pub http_server_service: Arc<Mutex<HttpServerService>>,
   pub socketio_service: Arc<Mutex<SocketIOService>>
 }
 // 全局变量
@@ -81,7 +81,7 @@ pub fn initialize_global() {
     msg_event_bus: Arc::new(Mutex::new(msg_event_bus)),
     startup_event_bus: Arc::new(Mutex::new(startup_event_bus)),
     wechat_service: Arc::new(Mutex::new(WechatService::new(None))),
-    // http_server_service:  Arc::new(Mutex::new(HttpServerService::new())),
+    http_server_service:  Arc::new(Mutex::new(HttpServerService::new())),
     socketio_service: Arc::new(Mutex::new(SocketIOService::new()))
   };
   let _ = GLOBAL.set(Arc::new(global_state));

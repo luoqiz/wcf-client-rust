@@ -30,11 +30,11 @@ impl EventHandler for HttpServerHandler {
 
             // 初始化 http_server 服务
             let wechat_config = global.wechat_config.read().unwrap();
-            // let port = wechat_config.http_server_port;
-            // let mut http_server_service = global.http_server_service.lock().unwrap();
-            // http_server_service.start(wechat.clone(), port).unwrap();
-            // info!("服务启动，监听 http://{}:{}", "0.0.0.0", port);
-            // info!("浏览器访问 http://localhost:{}/swagger/ 查看文档", port);
+            let port = wechat_config.http_server_port;
+            let mut http_server_service = global.http_server_service.lock().unwrap();
+            http_server_service.start(wechat.clone(), port).unwrap();
+            info!("服务启动，监听 http://{}:{}", "0.0.0.0", port);
+            info!("浏览器访问 http://localhost:{}/swagger/ 查看文档", port);
 
             // 初始化 socketio 服务
             let mut socket_service = global.socketio_service.lock().unwrap();
@@ -46,16 +46,16 @@ impl EventHandler for HttpServerHandler {
             let global = GLOBAL.get().unwrap();
 
             // 关闭 http_server 服务
-            // let mut http_server_service = global.http_server_service.lock().unwrap();
-            // match http_server_service.stop() {
-            //     Ok(()) => {
-            //         self.http_server_running = false;
-            //         ()
-            //     }
-            //     Err(e) => {
-            //         log::error!("http服务关闭失败 {}", e);
-            //     }
-            // }
+            let mut http_server_service = global.http_server_service.lock().unwrap();
+            match http_server_service.stop() {
+                Ok(()) => {
+                    self.http_server_running = false;
+                    ()
+                }
+                Err(e) => {
+                    log::error!("http服务关闭失败 {}", e);
+                }
+            }
 
             // 关闭 socketio 服务
             let mut socket_service = global.socketio_service.lock().unwrap();

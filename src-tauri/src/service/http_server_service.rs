@@ -21,27 +21,27 @@ impl HttpServerService {
     pub fn start(&mut self, wechat: Arc<Mutex<WeChat>>, port: u16) -> Result<(), String> {
         info!("HttpServerService 启动");
 
-        // let host = [0,0,0,0];
+        let host = [0,0,0,0];
 
-        // self.wechat = Some(wechat.clone());
-        // let (shutdown_tx, shutdown_rx) = oneshot::channel();
-        // let addr: ([u8;4], u16) = (host, port);
+        self.wechat = Some(wechat.clone());
+        let (shutdown_tx, shutdown_rx) = oneshot::channel();
+        let addr: ([u8;4], u16) = (host, port);
 
-        // let routes = endpoints::get_routes(wechat);
-        // let (_, server) = warp::serve(routes).bind_with_graceful_shutdown(addr, async {
-        //     shutdown_rx.await.ok();
-        // });
+        let routes = endpoints::get_routes(wechat);
+        let (_, server) = warp::serve(routes).bind_with_graceful_shutdown(addr, async {
+            shutdown_rx.await.ok();
+        });
 
-        // tokio::spawn(async move {
-        //     server.await;
-        // });
+        tokio::spawn(async move {
+            server.await;
+        });
 
-        // self.shutdown_tx = Some(shutdown_tx);
-        // debug!(
-        //     "HTTP server started at http://{}:{}",
-        //     host.iter().map(|b| b.to_string()).collect::<Vec<_>>().join("."),
-        //     port
-        // );
+        self.shutdown_tx = Some(shutdown_tx);
+        debug!(
+            "HTTP server started at http://{}:{}",
+            host.iter().map(|b| b.to_string()).collect::<Vec<_>>().join("."),
+            port
+        );
 
         Ok(())
     }
